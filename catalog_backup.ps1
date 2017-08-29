@@ -13,9 +13,9 @@
         None
 
     .NOTES
-        Version:        0.1
+        Version:        0.2
         Author:         flolilo
-        Creation Date:  2017-08-18 (GitHub release)
+        Creation Date:  2017-08-30 (GitHub release)
 
     .PARAMETER upDown
         Defines if catalogs will be backed up or if backup will be restored. Choice: "up" or "down".
@@ -39,14 +39,13 @@
         Ending of 7z command code (downstream)
     .PARAMETER rc_switches
         Robocopy command code switches
-    .PARAMETER confirmDelete
-        Ask for confirmation of older 7z-archives: 1 to enable confirmation, 0 to disable it.
+    .PARAMETER Delete
+        Ask for confirmation of older 7z-archives: 2 to enable confirmation, 1 to enable confirmation w/ confirmation, 0 to disable it.
 
     .EXAMPLE
-        catalog_backup.ps1 -upDown "up" -toProcess "C1" -confirmDelete 1
+        catalog_backup.ps1 -upDown "up" -toProcess "C1" -Delete 1
 #>
 
-# TODO: kick out robocopy: just unpack 7z-archive to computer. TODO:
 param(
     [string]$upDown="define",
     [array]$toProcess=@(),
@@ -55,19 +54,16 @@ param(
     [string]$server_path="\\192.168.0.2\_Flo\Eigene_Bilder\_CANON",
     [string]$7zipexe="C:\Program Files\7-Zip\7z.exe",
     [string]$7z_up_prefix="a",
-    [string]$7z_up_suffix="-mx=0",
+    [string]$7z_up_suffix="-mx=0 -x!Backup",
     [string]$7z_down_prefix="x",
     [string]$7z_down_suffix="",
-    [string]$rc_switches="/J /R:5 /W:15",
-    [int]$confirmDelete=-1
+    [int]$Delete=-1
 )
 
 #DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -typename System.Text.UTF8Encoding
-
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
-
 # Checking if PoshRSJob is installed:
 if (-not (Get-Module -ListAvailable -Name PoshRSJob)){
     Write-ColorOut "Module RSJob (https://github.com/proxb/PoshRSJob) is required, but it seemingly isn't installed - please start PowerShell as administrator and run`t" -ForegroundColor Red
@@ -152,133 +148,125 @@ Function Start-Sound($success){
     $sound.Play()
 }
 
-Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
-    while($true){
-        $MyShell = New-Object -com "Wscript.Shell"
-        $MyShell.sendkeys("{F15}")
-        Start-Sleep -Seconds 300
-    }
-} | Out-Null
-
-
-if($upDown -ne "up" -and $upDown -ne "down"){
-    while($true){
-        $upDown = Read-Host "Upload or download catalog(s)?"
-        if($upDown -ne "up" -and $upDown -ne "down"){
-            continue
-        }else{
-            break
-        }
-    }
-}
-if($toProcess.Length -lt 1){
-    while($true){
-        $separator = ","
-        $option = [System.StringSplitOptions]::RemoveEmptyEntries
-        $toProcess = (Read-Host "Which catalog(s) to process? Both: `"C1`",`"LR`"").Split($separator,$option)
-        if("LR" -notin $toProcess -and "C1" -notin $toProcess){
-            Write-ColorOut $toProcess
-            continue
-        }else{
-            break
-        }
-    }
-}
-if($confirmDelete -notin (0..1)){
-    while($true){
-        $confirmDelete = Read-Host "Confirm deletion of old archives / folders? (Integer)"
-        if($confirmDelete -notin (0..1)){
-            continue
-        }else{
-            break
-        }
-    }
-}
-
-[switch]$confirm = $(if($confirmDelete -eq 1){$true}else{$false})
-$archive_name_lr = "_Picture_Catalog_LR_$(Get-Date -Format "yyyy-MM-dd").7z"
-$archive_name_c1 = "_Picture_Catalog_C1_$(Get-Date -Format "yyyy-MM-dd").7z"
-
-if($upDown -eq "up"){  
-    if("LR" -in $toProcess){
-        Write-ColorOut "Scanning for and removing old LR-backups in $server_path ..." -ForegroundColor Cyan
-        Get-ChildItem -Path "$server_path\_Picture_Catalog_LR_*" -Filter *.7z -File | ForEach-Object {
-            Remove-Item $_.FullName -Confirm:$confirm
-        }
-        Start-Sleep -Milliseconds 250
-        Write-ColorOut "7zipping new LR-backup to $server_path ..." -ForegroundColor Cyan
-        Start-Process -FilePath $7zipexe -ArgumentList "$7z_up_prefix `"$server_path\$archive_name_lr`" `"$LR_path\*`" $7z_up_suffix" -NoNewWindow -Wait
-    }
-    if("C1" -in $toProcess){
-        Write-ColorOut "Scanning for and removing old C1-backups in $server_path ..." -ForegroundColor Cyan
-        Get-ChildItem -Path "$server_path\_Picture_Catalog_C1_*" -Filter *.7z -File | ForEach-Object {
-            Remove-Item $_.FullName -Confirm:$confirm
-        }
-        Start-Sleep -Milliseconds 250
-        Write-ColorOut "7zipping new C1-backup to $server_path ..." -ForegroundColor Cyan
-        Start-Process -FilePath $7zipexe -ArgumentList "$7z_up_prefix `"$server_path\$archive_name_c1`" `"$C1_path\*`" $7z_up_suffix" -NoNewWindow -Wait
-    }
-}elseif($upDown -eq "down"){
-    if("LR" -in $toProcess){
-        [array]$archive_LR = Get-ChildItem -Path "$server_path\_Picture_Catalog_LR_*" -Filter *.7z -File | ForEach-Object {
-            [PSCustomObject]@{
-                fullpath = $_.FullName
-                name = $_.Name
+# DEFINITION: Get user-values:
+Function Get-UserValues(){
+    if($script:upDown -ne "up" -and $script:upDown -ne "down"){
+        while($true){
+            $script:upDown = Read-Host "Upload or download catalog(s)?"
+            if($script:upDown -ne "up" -and $script:upDown -ne "down"){
+                continue
+            }else{
+                break
             }
         }
-        if($archive_LR.Length -gt 1){
-            Write-ColorOut "More than one file found:" -ForegroundColor Magenta
-            Write-ColorOut $archive_LR.name -ForegroundColor Yellow
-            Pause
-        }
-        Get-ChildItem -Path $LR_path -File -Filter *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-        Start-Process robocopy -ArgumentList " `"$(Split-Path -Path $archive_LR.fullpath -Parent)`" `"$LR_path`" `"$($archive_LR.name)`" $rc_switches" -NoNewWindow -Wait
-        Get-ChildItem -Path $LR_path -Recurse -Directory | ForEach-Object {
-            Remove-Item -Path $_.FullName -Recurse -Confirm:$confirm
-        }
-        Get-ChildItem -Path $LR_path -Recurse -File -Exclude *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-        Start-Process -FilePath $7zipexe -ArgumentList "$7z_down_prefix `"$LR_path\$($archive_LR.name)`" -o`"$LR_path`" $7z_down_suffix" -NoNewWindow -Wait
-        Get-ChildItem -Path $LR_path -File -Filter *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-
     }
-    if("C1" -in $toProcess){
-        $archive_C1 = Get-ChildItem -Path "$server_path\_Picture_Catalog_C1_*" -Filter *.7z -File | ForEach-Object {
-            [PSCustomObject]@{
-                fullpath = $_.FullName
-                name = $_.Name
+    if($script:toProcess.Length -lt 1){
+        while($true){
+            $separator = ","
+            $option = [System.StringSplitOptions]::RemoveEmptyEntries
+            $script:toProcess = (Read-Host "Which catalog(s) to process? Both: `"C1`",`"LR`"").Split($separator,$option)
+            if("LR" -notin $script:toProcess -and "C1" -notin $script:toProcess){
+                continue
+            }else{
+                break
             }
         }
-        if($archive_C1.Length -gt 1){
-            Write-ColorOut "More than one file found:" -ForegroundColor Magenta
-            Write-ColorOut $archive_C1.name -ForegroundColor Yellow
-            Pause
-        }
-        Get-ChildItem -Path $C1_path -File -Filter *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-        Start-Process robocopy -ArgumentList " `"$(Split-Path -Path $archive_C1.fullpath -Parent)`" `"$C1_path`" `"$($archive_C1.name)`" $rc_switches" -NoNewWindow -Wait
-        Get-ChildItem -Path $C1_path -Recurse -Directory | ForEach-Object {
-            Remove-Item -Path $_.FullName -Recurse -Confirm:$confirm
-        }
-        Get-ChildItem -Path $C1_path -Recurse -File -Exclude *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-        Start-Process -FilePath $7zipexe -ArgumentList "$7z_down_prefix `"$C1_path\$($archive_C1.name)`" -o`"$C1_path`" $7z_down_suffix" -NoNewWindow -Wait
-        Get-ChildItem -Path $C1_path -File -Filter *.7z | ForEach-Object {
-            Remove-Item -Path $_.FullName -Confirm:$confirm
-        }
-
     }
+    if($script:Delete -notin (0..2)){
+        while($true){
+            $script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
+            if($script:Delete -notin (0..2)){
+                continue
+            }else{
+                break
+            }
+        }
+    }
+
+    [switch]$script:confirm = $(if($script:Delete -eq 1){$true}else{$false})
 }
 
-Get-RSJob -Name "PreventStandby" | Stop-RSJob
-Start-Sleep -Milliseconds 5
-Get-RSJob -Name "PreventStandby" | Remove-RSJob
+Function Start-Upload(){
+    param(
+        [string]$catalogname,
+        [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
+    )
 
-Start-Sound(1)
+    if($script:Delete -ne 0){
+        Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+        Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
+            Remove-Item $_.FullName -Confirm:$script:confirm
+        }
+    }
+    Start-Sleep -Milliseconds 250
+    Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan
+    $archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+    Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:server_path\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
+
+}
+
+Function Start-Download(){
+    param(
+        [string]$catalogname,
+        [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
+    )
+
+    Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+    [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
+        [PSCustomObject]@{
+            fullpath = $_.FullName
+            name = $_.Name
+        }
+    }
+    if($archive.Length -gt 1){
+        Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
+        Write-ColorOut $archive.name -ForegroundColor Yellow
+        $archive | Sort-Object -Property Name -Descending
+        $archive
+        $archive = $archive[0]
+        Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan
+        Write-ColorOut $archive.name
+        Pause
+    }elseif($archive.Length -lt 1){
+        Write-ColorOut "No Catalog-Backups found - aborting!" -ForegroundColor Red
+        Pause
+        Exit
+    }
+
+    Write-ColorOut "Deleting existing files in $PathPC" -ForegroundColor Cyan
+    # Deleting old catalog-fiels on computer:
+    Get-ChildItem -Path $PathPC -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
+    Get-ChildItem -Path $PathPC -Recurse -Directory | Remove-Item -Confirm:$confirm
+
+    Write-ColorOut "Starting Copying" -ForegroundColor Cyan
+    Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" -o`"$PathPC`" $script:7z_down_suffix" -NoNewWindow -Wait
+
+}
+
+Function Start-Everything(){
+    Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
+        while($true){
+            $MyShell = New-Object -com "Wscript.Shell"
+            $MyShell.sendkeys("{F15}")
+            Start-Sleep -Seconds 300
+        }
+    } | Out-Null
+
+    Get-UserValues
+    for($i=0; $i -lt $script:toProcess.Length; $i++){
+        if($script:upDown -eq "up"){  
+            Start-Upload -catalogname $script:toProcess[$i]
+        }elseif($script:upDown -eq "down"){
+            Start-Download -catalogname $script:toProcess[$i]
+        }
+    }
+
+    # DEFINITION: clean up:
+    Get-RSJob -Name "PreventStandby" | Stop-RSJob
+    Start-Sleep -Milliseconds 5
+    Get-RSJob -Name "PreventStandby" | Remove-RSJob
+
+    Start-Sound(1)
+}
+
+Start-Everything
