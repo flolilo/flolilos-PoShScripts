@@ -133,19 +133,19 @@ Function Get-ComputerStats(){
 Write-ColorOut "flolilo's Preventsleep-Script v1.4 /" -ForegroundColor Cyan -NoNewline
 Write-ColorOut "/ flolilos Schlaf-Verhinder-Skript v1.4" -ForegroundColor Yellow
 Write-ColorOut "This script prevents the standby-mode while specified processes are running. /" -ForegroundColor Cyan -NoNewline
-Write-ColorOut "/ Dieses Skript verhindert, dass der Computer während der Ausführung der angegebenen Prozesse in den Standby wechselt." -ForegroundColor Yellow
+Write-ColorOut "/ Dieses Skript verhindert, dass der Computer waehrend der Ausfuehrung der angegebenen Prozesse in den Standby wechselt." -ForegroundColor Yellow
 Write-ColorOut "PLEASE DON'T CLOSE THIS WINDOW! // BITTE FENSTER NICHT SCHLIESSEN!`r`n" -ForegroundColor Red -BackgroundColor White
 
 # DEFINITION: After direct start:
 if($mode -eq "specify"){
     while($true){
         Write-ColorOut "Which mode? `"CPU`" for CPU-Usage or `"process`" for process-specific. (both w/o quotes): /" -NoNewline
-        Write-ColorOut "/ Welcher Modus? `"CPU`" für CPU-Auslastung oder `"process`" für Prozess-Überwachung. (beides ohne Anfürhungszeichen):" -ForegroundColor DarkGray
+        Write-ColorOut "/ Welcher Modus? `"CPU`" fuer CPU-Auslastung oder `"process`" fuer Prozess-Ueberwachung. (beides ohne Anfuerhungszeichen):" -ForegroundColor DarkGray
         [string]$mode = Read-Host
         if($mode -eq "CPU" -or $mode -eq "process"){
             break
         }else{
-            Write-ColorOut "Invalid choice, please try again. // Ungültige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+            Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
             continue
         }
     }
@@ -159,7 +159,7 @@ if($mode -eq "cpu"){
             if($userCPUlimit -in (-1..99)){
                 break
             }else{
-                Write-ColorOut "Invalid choice, please try again. // Ungültige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
                 continue
             }
         }
@@ -174,7 +174,7 @@ if($mode -eq "process"){
             if($userProcessCount -in (1..100)){
                 break
             }else{
-                Write-ColorOut "Invalid choice, please try again. // Ungültige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
                 continue
             }
         }
@@ -195,18 +195,18 @@ if($mode -eq "process"){
 if($shutdown -eq -1){
     while($true){
         Write-ColorOut "Shutdown when done? `"1`" for yes, `"0`" for no. /" -NoNewline
-        Write-ColorOut "/ Nach Abschluss herunterfahren? `"1`" für Ja, `"0`" für Nein." -ForegroundColor DarkGray
+        Write-ColorOut "/ Nach Abschluss herunterfahren? `"1`" fuer Ja, `"0`" fuer Nein." -ForegroundColor DarkGray
         [int]$shutdown = Read-Host
             if($shutdown -in (0..1)){
             break
         }else{
-            Write-ColorOut "Invalid choice, please try again. // Ungültige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+            Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
             continue
         }
     }
 }
 if($mode -eq "none" -and $fileModeEnable -eq 0){
-    Write-ColorOut "`r`nInvalid choice: if -mode is `"none`", then -fileModeEnable must be set to 1. ABORTING. // Ungültige Auswahl: wenn -mode `"none`" ist, muss -fileModeEnable 1 sein." -ForegroundColor Red
+    Write-ColorOut "`r`nInvalid choice: if -mode is `"none`", then -fileModeEnable must be set to 1. ABORTING. // Ungueltige Auswahl: wenn -mode `"none`" ist, muss -fileModeEnable 1 sein." -ForegroundColor Red
     Pause
     Exit
 }
@@ -223,7 +223,7 @@ while($counter -lt $counterMax){
                 Write-ColorOut " - File-based process unfinished, sleeping for $($timeBase / 10) seconds. // Datei-basierter Prozess noch nicht fertig, schlafe $($timeBase / 10) Sekunden." -ForegroundColor Yellow
             }else{
                 Write-ColorOut "$(Get-Date -Format 'dd.MM.yy, HH:mm:ss')" -NoNewline
-                Write-ColorOut " - File-based process done! Sleeping for $($timeBase / 10) seconds. // Datei-basierter Prozess fertig! Schlafe für $($timeBase / 10) Sekunden." -ForegroundColor Green
+                Write-ColorOut " - File-based process done! Sleeping for $($timeBase / 10) seconds. // Datei-basierter Prozess fertig! Schlafe fuer $($timeBase / 10) Sekunden." -ForegroundColor Green
                 $fileModeEnable = 0
             }
         }Else{
@@ -244,7 +244,7 @@ while($counter -lt $counterMax){
         }Else{
             Write-ColorOut "$(Get-Date -Format 'dd.MM.yy, HH:mm:ss')" -NoNewline
             Write-ColorOut " - Process(es) `"$userProcess`" done, sleeping for $($timeBase / 2) seconds. // Prozess(e) `"$userProcess`" fertig, schlafe $($timeBase / 2) Sekunden." -ForegroundColor Green
-            Write-ColorOut "$counter/$counterMax Passes without any activity. // $counter/$counterMax Durchgänge ohne Aktivität." -ForegroundColor Green
+            Write-ColorOut "$counter/$counterMax Passes without any activity. // $counter/$counterMax Durchgaenge ohne Aktivitaet." -ForegroundColor Green
             $counter ++
             $MyShell.sendkeys("{F15}")
             Start-Sleep -Seconds $($timeBase / 2)
@@ -254,7 +254,7 @@ while($counter -lt $counterMax){
         $CPUstats = Get-ComputerStats
         if($CPUstats -gt $userCPUlimit){
             Write-ColorOut "$(Get-Date -Format 'dd.MM.yy, HH:mm:ss')" -NoNewline
-            Write-ColorOut " - CPU usage is $($CPUstats)% = above $($userCPUlimit)%, sleeping for $timeBase seconds. // CPU-Auslastung $($CPUstats)% = über $($userCPUlimit)%, schlafe $timeBase Sekunden." -ForegroundColor Yellow
+            Write-ColorOut " - CPU usage is $($CPUstats)% = above $($userCPUlimit)%, sleeping for $timeBase seconds. // CPU-Auslastung $($CPUstats)% = ueber $($userCPUlimit)%, schlafe $timeBase Sekunden." -ForegroundColor Yellow
             $counter = 0
             $MyShell.sendkeys("{F15}")
             Start-Sleep -Seconds $($timeBase)
@@ -267,7 +267,7 @@ while($counter -lt $counterMax){
         }
     }
     if($mode -eq "none"){
-        Write-ColorOut "Mode `"none`" selected, program therefore finished. // Modus `"none`" gewählt, Programm daher fertig." -ForegroundColor Cyan
+        Write-ColorOut "Mode `"none`" selected, program therefore finished. // Modus `"none`" gewaehlt, Programm daher fertig." -ForegroundColor Cyan
         $counter = $counterMax
         break
     }
