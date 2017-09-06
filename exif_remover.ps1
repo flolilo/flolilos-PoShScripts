@@ -41,6 +41,7 @@ param(
     [string]$path = (Get-Location).Path
 )
 
+
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
@@ -94,8 +95,12 @@ Function Write-ColorOut(){
 }
 
 if((Test-Path -LiteralPath $encoder -PathType Leaf) -eq $false){
-    Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red
-    Exit
+    if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $false){
+        Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red
+        Exit
+    }else{
+        $encoder = "$($PSScriptRoot)\exiftool.exe"
+    }
 }
 
 if((Test-Path -LiteralPath $path -PathType Container) -eq $true){
