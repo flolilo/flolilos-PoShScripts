@@ -55,9 +55,9 @@ param(
     [string]$C1_path="",
     [string]$server_path="",
     [string]$7zipexe="C:\Program Files\7-Zip\7z.exe",
-    [string]$7z_up_prefix="a",
-    [string]$7z_up_suffix="-mx=0 -x!Backup",
-    [string]$7z_down_prefix="x",
+    [string]$7z_up_prefix="a -t7z -m0=Copy -mx0 -ms=off -ssw -sccUTF-8 -bb0",
+    [string]$7z_up_suffix=" -x!Backup",
+    [string]$7z_down_prefix="x -aoa -bb0 -pdefault -sccUTF-8 -spf2",
     [string]$7z_down_suffix="",
     [int]$backup_existing=-1,
     [int]$Delete=-1
@@ -226,11 +226,14 @@ Function Get-UserValues(){
 }
 
 Function Start-Upload(){
-    param(
-        [string]$catalogname,
-        [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
-    )
-    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$PathPC" -PathType Container) -ne $true){
+    param([string]$catalogname)
+    if($catalogname -eq "C1"){
+        [string]$Catalog_Path = $script:C1_path
+    }elseif($catalogname -eq "LR"){
+        [string]$Catalog_Path = $script:LR_path
+    }
+
+    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
         Start-Sound(0)
         Start-Sleep -Seconds 5
@@ -244,22 +247,31 @@ Function Start-Upload(){
         }
         Start-Sleep -Milliseconds 250
         Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan
-        $archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
-        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:server_path\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
+        [string]$archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$script:server_path\$archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
     }
 }
 
 Function Start-Download(){
-    param(
-        [string]$catalogname,
-        [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
-    )
-    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$PathPC" -PathType Container) -ne $true){
+    param([string]$catalogname)
+    if($catalogname -eq "C1"){
+        [string]$Catalog_Path = $script:C1_path
+    }elseif($catalogname -eq "LR"){
+        [string]$Catalog_Path = $script:LR_path
+    }
+    
+    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
         Start-Sound(0)
         Start-Sleep -Seconds 5
         Exit
     }else{
+        if($script:backup_existing -eq 1){
+            Write-ColorOut "Backing up existing files in $Catalog_Path" -ForegroundColor Cyan
+            [string]$backup_archive_name = "_BACKUP_-_PicCat_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+            Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$Catalog_Path\$backup_archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
+        }
+
         Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
         [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
             [PSCustomObject]@{
@@ -268,11 +280,16 @@ Function Start-Download(){
             }
         }
         if($archive.Length -gt 1){
-            Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
-            Write-ColorOut $archive.name -ForegroundColor Yellow
             $archive | Sort-Object -Property Name -Descending
-            $archive
-            $archive = $archive[0]
+            $archive | Out-Null
+            Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
+            for($i=0; $i -lt $archive.Length; $i++)
+            Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow
+            [int]$select = ($archive.Length + 10)
+            while($select -notin (0..($archive.Length -1))){
+                [int]$select = Read-Host "Which one to use?"
+            }
+            $archive = $archive[$select]
             Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan
             Write-ColorOut $archive.name
             Pause
@@ -282,18 +299,13 @@ Function Start-Download(){
             Exit
         }
 
-        if($script:backup_existing -eq 1){
-            Write-ColorOut "Backing up existing files in $PathPC" -ForegroundColor Cyan
-            $archive_name = "_BACKUP_-_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
-            Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:PathPC\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
-        }
-        Write-ColorOut "Deleting existing files in $PathPC" -ForegroundColor Cyan
+        Write-ColorOut "Deleting existing files in $Catalog_Path" -ForegroundColor Cyan
         # Deleting old catalog-files on computer:
-        Get-ChildItem -Path $PathPC -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
-        Get-ChildItem -Path $PathPC -Recurse -Directory | Remove-Item -Confirm:$confirm
+        Get-ChildItem -Path $Catalog_Path -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm -Recurse
+        Get-ChildItem -Path $Catalog_Path -Recurse -Directory | Remove-Item -Confirm:$confirm -Recurse
 
         Write-ColorOut "Starting Copying" -ForegroundColor Cyan
-        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" -o`"$PathPC`" $script:7z_down_suffix" -NoNewWindow -Wait
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$Catalog_Path`" $script:7z_down_suffix" -NoNewWindow -Wait
     }
 }
 
