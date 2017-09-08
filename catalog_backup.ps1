@@ -8,14 +8,14 @@
         Using 7z to fastly archive the catalog(s) to the backup-location, using robocopy to download the archive from the backup-location.
 
     .INPUTS
-        None
+        (optional) catalog_backup.txt (encoded in UTF8)
     .OUTPUTS
         None
 
     .NOTES
-        Version:        0.2
+        Version:        0.3
         Author:         flolilo
-        Creation Date:  2017-08-30 (GitHub release)
+        Creation Date:  2017-09-08
 
     .PARAMETER upDown
         Defines if catalogs will be backed up or if backup will be restored. Choice: "up" or "down".
@@ -39,6 +39,8 @@
         Ending of 7z command code (downstream)
     .PARAMETER rc_switches
         Robocopy command code switches
+    .PARAMETER backup_existing
+        When -upDown "down" is specified, back up existing catalog(s) to an archive. 1 enables, 0 disables.
     .PARAMETER Delete
         Ask for confirmation of older 7z-archives: 2 to enable confirmation, 1 to enable confirmation w/ confirmation, 0 to disable it.
 
@@ -49,14 +51,15 @@
 param(
     [string]$upDown="define",
     [array]$toProcess=@(),
-    [string]$LR_path="D:\Eigene_Bilder\_CANON\_Picture_Catalogs\Lightroom",
-    [string]$C1_path="D:\Eigene_Bilder\_CANON\_Picture_Catalogs\Capture_One",
-    [string]$server_path="\\192.168.0.2\_Flo\Eigene_Bilder\_CANON",
+    [string]$LR_path="",
+    [string]$C1_path="",
+    [string]$server_path="",
     [string]$7zipexe="C:\Program Files\7-Zip\7z.exe",
     [string]$7z_up_prefix="a",
     [string]$7z_up_suffix="-mx=0 -x!Backup",
     [string]$7z_down_prefix="x",
     [string]$7z_down_suffix="",
+    [int]$backup_existing=-1,
     [int]$Delete=-1
 )
 
@@ -172,6 +175,41 @@ Function Get-UserValues(){
             }
         }
     }
+    if(("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0) -or ("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0) -or $script:server_path.Length -eq 0){
+        if((Test-Path -LiteralPath "$($PSScriptRoot)\catalog_backup.txt" -PathType Leaf)){
+            $temp = Get-Content -LiteralPath "$($PSScriptRoot)\catalog_backup.txt" -Raw -Encoding UTF8 | ConvertFrom-StringData
+            if("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0){
+                $script:LR_path = $temp.LR_path
+            }
+            if("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0){
+                $script:C1_path = $temp.C1_path
+            }
+            if($script:server_path.Length -eq 0){
+                $script:server_path = $temp.server_path
+            }
+        }else{
+            if("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0){
+                try{[string]$script:LR_path = Read-Host "Enter path to LR's catalog"}catch{continue}
+            }
+            if("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0){
+                try{[string]$script:C1_path = Read-Host "Enter path to C1's catalog"}catch{continue}
+            }
+            if($script:server_path.Length -eq 0){
+                try{[string]$script:server_path = Read-Host "Enter backup-path"}catch{continue}
+            }
+        }
+    }
+    if($script:upDown -eq "down" -and $script:backup_existing -notin (0..1)){
+        while($true){
+            $script:backup_existing = Read-Host "Back up existing folders? (1 = yes, 0 = no)"
+            if($script:backup_existing -notin (0..1)){
+                Write-ColorOut "Invalid input." -ForegroundColor Magenta
+                continue
+            }else{
+                break
+            }
+        }
+    }
     if($script:Delete -notin (0..2)){
         while($true){
             $script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
@@ -244,8 +282,13 @@ Function Start-Download(){
             Exit
         }
 
+        if($script:backup_existing -eq 1){
+            Write-ColorOut "Backing up existing files in $PathPC" -ForegroundColor Cyan
+            $archive_name = "_BACKUP_-_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+            Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:PathPC\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
+        }
         Write-ColorOut "Deleting existing files in $PathPC" -ForegroundColor Cyan
-        # Deleting old catalog-fiels on computer:
+        # Deleting old catalog-files on computer:
         Get-ChildItem -Path $PathPC -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
         Get-ChildItem -Path $PathPC -Recurse -Directory | Remove-Item -Confirm:$confirm
 
