@@ -47,7 +47,6 @@
     .EXAMPLE
         catalog_backup.ps1 -upDown "up" -toProcess "C1" -Delete 1
 #>
-
 param(
     [string]$upDown="define",
     [array]$toProcess=@(),
@@ -83,7 +82,7 @@ Function Write-ColorOut(){
             Using the [Console]-commands to make everything faster.
 
         .NOTES
-            Date: 2018-08-22
+            Date: 2017-09-08
         
         .PARAMETER Object
             String to write out
@@ -102,8 +101,8 @@ Function Write-ColorOut(){
     #>
     param(
         [string]$Object,
-        [string]$ForegroundColor=[Console]::ForegroundColor,
-        [string]$BackgroundColor=[Console]::BackgroundColor,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$ForegroundColor=[Console]::ForegroundColor,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$BackgroundColor=[Console]::BackgroundColor,
         [switch]$NoNewLine=$false
     )
     $old_fg_color = [Console]::ForegroundColor
@@ -267,7 +266,7 @@ Function Start-Download(){
         Exit
     }else{
         if($script:backup_existing -eq 1){
-            Write-ColorOut "Backing up existing files in $Catalog_Path" -ForegroundColor Cyan
+            Write-ColorOut "Backing up existing files in $Catalog_Path ..." -ForegroundColor Cyan
             [string]$backup_archive_name = "_BACKUP_-_PicCat_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
             Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$Catalog_Path\$backup_archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
         }
@@ -283,8 +282,9 @@ Function Start-Download(){
             $archive | Sort-Object -Property Name -Descending
             $archive | Out-Null
             Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
-            for($i=0; $i -lt $archive.Length; $i++)
-            Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow
+            for($i=0; $i -lt $archive.Length; $i++){
+                Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow
+            }
             [int]$select = ($archive.Length + 10)
             while($select -notin (0..($archive.Length -1))){
                 [int]$select = Read-Host "Which one to use?"
@@ -299,12 +299,12 @@ Function Start-Download(){
             Exit
         }
 
-        Write-ColorOut "Deleting existing files in $Catalog_Path" -ForegroundColor Cyan
+        Write-ColorOut "Deleting existing files in $Catalog_Path ..." -ForegroundColor Cyan
         # Deleting old catalog-files on computer:
         Get-ChildItem -Path $Catalog_Path -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm -Recurse
         Get-ChildItem -Path $Catalog_Path -Recurse -Directory | Remove-Item -Confirm:$confirm -Recurse
 
-        Write-ColorOut "Starting Copying" -ForegroundColor Cyan
+        Write-ColorOut "Starting Copying..." -ForegroundColor Cyan
         Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$Catalog_Path`" $script:7z_down_suffix" -NoNewWindow -Wait
     }
 }
