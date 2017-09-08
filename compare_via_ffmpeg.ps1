@@ -1,135 +1,319 @@
-﻿#================================================================================
-#================================================================================
-# Come to set the global values? Take a look here...
+#requires -version 3
 
-# Path to ffmpeg.exe (e.g. "C:\Path\ffmpeg.exe")
-$encoder = "C:\FFMPEG\binaries\ffmpeg.exe"
+<#
+    .SYNOPSIS
+        Will compare two videos via FFmpeg.
 
-# Set the the standard-path for file dialogues
-$deski = "MyComputer"
-#================================================================================
+    .DESCRIPTION
+        None at this time.
 
+    .NOTES
+        Version:        1.1
+        Author:         flolilo
+        Creation Date:  2017-9-8
+        Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
+        applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
+        on the WWW). However, some parts are copies or modifications of very genuine code - see
+        the "CREDIT:"-tags to find them.
 
-#================================================================================
-#================================================================================
-# Setting up the GUI:
-#================================================================================
+    .PARAMETER encoder
+        Set path to ffmpeg.exe
 
-$inputXML = @"
-<Window x:Class="FlosFFmpegSkripte.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FlosFFmpegSkripte"
-        mc:Ignorable="d"
-        Title="Flos FFmpeg-Compare v1.0" Height="250" Width="705">
-    <Grid Background="#FFB3B6B5">
-        <TextBlock x:Name="textBlockWelcome" HorizontalAlignment="Center" Margin="0,20,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="52" Width="521" FontSize="18" TextAlignment="Center"><Run Text="Welcome to Flo's Video-Comparison-Script v1.0"/><LineBreak/><Run Text="Powered by FFmpeg"/></TextBlock>
-        <TextBlock x:Name="textBlockInA" HorizontalAlignment="Left" Margin="15,86,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="18" Width="80" Text="Path Video 1:"/>
-        <TextBlock x:Name="textBlockInB" HorizontalAlignment="Left" Margin="15,118,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="18" Width="80" Text="Path Video 2:"/>
-        <TextBlock x:Name="textBlockOut" HorizontalAlignment="Left" Margin="15,148,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="18" Width="80" Text="Output-Path:"/>
-        <Button x:Name="buttonStart" Content="START" HorizontalAlignment="Left" Margin="190,182,0,0" VerticalAlignment="Top" Width="110"/>
-        <Button x:Name="buttonClose" Content="Exit" HorizontalAlignment="Left" Margin="472,182,0,0" VerticalAlignment="Top" Width="60"/>
-        <Button x:Name="buttonSearchInA" Content="Find..." HorizontalAlignment="Left" Margin="577,85,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonSearchInB" Content="Find..." HorizontalAlignment="Left" Margin="577,115,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonSearchOut" Content="Find..." HorizontalAlignment="Left" Margin="577,145,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <TextBox x:Name="textBoxInA" HorizontalAlignment="Left" Height="23" Margin="111,85,0,0" Text="D:\video_original.mkv" VerticalAlignment="Top" Width="450" VerticalScrollBarVisibility="Disabled"/>
-        <TextBox x:Name="textBoxInB" HorizontalAlignment="Left" Height="23" Margin="111,115,0,0" Text="D:\video_new.mkv" VerticalAlignment="Top" Width="450" VerticalScrollBarVisibility="Disabled"/>
-        <TextBox x:Name="textBoxOut" HorizontalAlignment="Left" Height="23" Margin="111,145,0,0" Text="D:\video_compare.mkv" VerticalAlignment="Top" Width="450" VerticalScrollBarVisibility="Disabled"/>
-    </Grid>
-</Window>
-"@
- 
-$inputXML = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
-[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
-[xml]$XAML = $inputXML
-$reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
-catch{Write-Host "Unable to load Windows.Markup.XamlReader. Double-check syntax and ensure .net is installed."}
-$xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+    .INPUTS
+        ffmpeg.exe
+        video files
 
-Function Get-FormVariables{
-    if ($global:ReadmeDisplay -ne $true){
-        Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow;
-        $global:ReadmeDisplay=$true
+    .OUTPUTS
+        video file.
+
+    .EXAMPLE
+        compare-via-ffmpeg.ps1 -GUI_direct direct
+#>
+param(
+    [string]$encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
+    [string]$VidInA = "",
+    [string]$VidInB = "",
+    [string]$VidOut = "",
+    [string]$GUI_direct = "GUI",
+    [int]$debug = 0
+)
+
+# DEFINITION: Making Write-Host much, much faster:
+Function Write-ColorOut(){
+    <#
+        .SYNOPSIS
+            A faster version of Write-Host
+        
+        .DESCRIPTION
+            Using the [Console]-commands to make everything faster.
+
+        .NOTES
+            Date: 2018-08-22
+        
+        .PARAMETER Object
+            String to write out
+        
+        .PARAMETER ForegroundColor
+            Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
+        
+        .PARAMETER BackgroundColor
+            Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
+        
+        .PARAMETER NoNewLine
+            When enabled, no line-break will be created.
+        
+        .EXAMPLE
+            Write-ColorOut "Hello World!" -ForegroundColor Green -NoNewLine
+    #>
+    param(
+        [string]$Object,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","Darkgray","Gray","DarkYellow","White","DarkMagenta")][string]$ForegroundColor=[Console]::ForegroundColor,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","Darkgray","Gray","DarkYellow","White","DarkMagenta")][string]$BackgroundColor=[Console]::BackgroundColor,
+        [switch]$NoNewLine=$false
+    )
+    $old_fg_color = [Console]::ForegroundColor
+    $old_bg_color = [Console]::BackgroundColor
+    
+    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $ForeGroundColor}
+    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $BackgroundColor}
+
+    if($NoNewLine -eq $false){
+        [Console]::WriteLine($Object)
+    }else{
+        [Console]::Write($Object)
     }
-    write-host "Found the following interactable elements:" -ForegroundColor Cyan
-    get-variable WPF*
+    
+    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $old_fg_color}
+    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
 }
 
-# If you want to see the variables the GUI has to offer, set this to 1:
-$programmierung = 0
-if($programmierung -ne 0){
-    Get-FormVariables
-}
-
-
-#================================================================================
-#================================================================================
-# Actually make the objects work:
-#================================================================================
-
-# Programming the functions for file-dialogue, copying and verifying:
-Function Get-Folder($initialDirectory){
-    [void][System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
-    $foldername = New-Object System.Windows.Forms.OpenFileDialog
-    $foldername.InitialDirectory = $initialDirectory
-    $foldername.ShowDialog() | Out-Null
-    return $foldername.FileName
-}
-Function Set-Folder($initialDirectory){
-    [void][System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
-    $foldername = New-Object System.Windows.Forms.SaveFileDialog
-    $foldername.InitialDirectory = $initialDirectory
-    $foldername.ShowDialog() | Out-Null
-    return $foldername.FileName
-}
-
-
-#===========================================================================
-#===========================================================================
-# Programming the buttons:
-#===========================================================================
-
-$WPFbuttonStart.Add_Click({
-    Clear-Host
-    Start-Process powershell -ArgumentList "$PSScriptRoot\preventsleep.ps1 -mode 1 -zeitbasis 100" -WindowStyle Minimized
-    $userInputA = $WPFtextBoxInA.Text
-    $userInputB = $WPFtextBoxInB.Text
-    $userOutput = $WPFtextBoxOut.Text
-    $arguments = " -i `"$userInputA`" -i `"$userInputB`" -hide_banner -filter_complex `"[1:v]format=yuva444p,lut=c3=128,negate[video2withAlpha],[0:v][video2withAlpha]overlay[out]`" -map `"[out]`" -c:v libx264 -pix_fmt yuv444p -preset veryslow -intra -crf 10 -an -map_metadata -1 `"$userOutput`""
-    Write-Host "FFmpeg Arguments: $arguments" -ForegroundColor Yellow
-    Write-Host " "
-    $Form.WindowState = 'Minimized'
-    Start-Process -FilePath $encoder -ArgumentList $arguments -Wait -NoNewWindow
-    $Form.WindowState = 'Normal'
-})
-
-$WPFbuttonSearchInA.Add_Click({
-    $searchIn = Get-Folder -InitialDirectory $deski
-    $WPFtextBoxInA.Text = $searchIn
-})
-
-$WPFbuttonSearchInB.Add_Click({
-    $searchOut = Get-Folder -InitialDirectory $deski
-    $WPFtextBoxInB.Text = $searchOut
-})
-
-$WPFbuttonSearchOut.Add_Click({
-    $searchOut = Set-Folder -InitialDirectory $deski
-    $WPFtextBoxOut.Text = $searchOut
-})
-
-$WPFbuttonClose.Add_Click({
-    $Form.Close()
+# Checking if PoshRSJob is installed:
+if (-not (Get-Module -ListAvailable -Name PoshRSJob)){
+    Write-ColorOut "Module RSJob (https://github.com/proxb/PoshRSJob) is required, but it seemingly isn't installed - please start PowerShell as administrator and run`t" -ForegroundColor Red
+    Write-ColorOut "Install-Module -Name PoshRSJob " -ForegroundColor DarkYellow
+    Write-ColorOut "or use the fork of media-copytool without RSJob." -ForegroundColor Red
+    Pause
     Exit
-})
+}
+
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+
+# If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
+[int]$getWPF = 0
 
 
-#================================================================================
-#================================================================================
-# Show/Start the GUI: 
-#================================================================================
+# ==================================================================================================
+# ==============================================================================
+#   Defining Functions:
+# ==============================================================================
+# ==================================================================================================
 
-$Form.ShowDialog() | out-null
+# DEFINITION: Pause the programme if debug-var is active. Also, enable measuring times per command with -debug 3.
+Function Invoke-Pause(){
+    param($tottime=0.0)
+
+    if($script:debug -eq 3 -and $tottime -ne 0.0){
+        Write-ColorOut "Used time for process:`t$tottime`r`n" -ForegroundColor Magenta
+    }
+    if($script:debug -ge 2){
+        if($tottime -ne 0.0){
+            $script:timer.Stop()
+        }
+        Pause
+        if($tottime -ne 0.0){
+            $script:timer.Start()
+        }
+    }
+}
+
+# DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
+Function Invoke-Close(){
+    if($script:GUI_direct -eq "GUI"){
+        $script:Form.Close()
+    }
+    Write-ColorOut "Exiting - This could take some seconds. Please do not close window!" -ForegroundColor Magenta
+    Get-RSJob | Stop-RSJob
+    Start-Sleep -Milliseconds 5
+    Get-RSJob | Remove-RSJob
+    if($script:debug -ne 0){
+        Pause
+    }
+    Exit
+}
+
+# DEFINITION: For the auditory experience:
+Function Start-Sound($success){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+
+        .NOTES
+            Date: 2018-08-22
+
+        .PARAMETER success
+            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound(1)
+    #>
+    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
+    if($success -eq 1){
+        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+    }else{
+        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    }
+    $sound.Play()
+}
+
+
+# DEFINITION: "Select"-Window for buttons to choose a path.
+Function Get-Folder($VidAVidBOut){
+    [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
+    $folderdialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $folderdialog.rootfolder = "MyComputer"
+    if($folderdialog.ShowDialog() -eq "OK"){
+        if($VidAVidBOut -eq "VidA"){
+            $script:WPFtextBoxInA.Text = $folderdialog.SelectedPath
+        }
+        if($VidAVidBOut -eq "VidB"){
+            $script:WPFtextBoxInB.Text = $folderdialog.SelectedPath
+        }
+        if($VidAVidBOut -eq "Out"){
+            $script:WPFtextBoxOut.Text = $folderdialog.SelectedPath
+        }
+    }
+}
+
+Function Test-Everything(){
+    [int]$counter = 0
+    if((Test-Path -LiteralPath $script:encoder -PathType Leaf) -ne $true){
+        Write-ColorOut "Cannot find ffmpeg.exe - aborting!" -ForegroundColor Red
+        $counter++
+    }
+
+    if((Test-Path -LiteralPath $script:VidInA -PathType Leaf) -ne $true){
+        Write-ColorOut "Cannot find $script:VidInA - aborting!" -ForegroundColor Red
+        $counter++
+    }
+    if((Test-Path -LiteralPath $script:VidInB -PathType Leaf) -ne $true){
+        Write-ColorOut "Cannot find $script:VidInB - aborting!" -ForegroundColor Red
+        $counter++
+    }
+
+    if((Test-Path -LiteralPath $(Split-Path -LiteralPath $script:VidOut -Parent) -PathType Container) -ne $false){
+        if((Test-Path -LiteralPath $(Split-Path -LiteralPath $script:VidOut -Qualifier) -PathType Container) -ne $false){
+            Write-ColorOut "Invalid output-path - aborting!" -ForegroundColor Red
+            $counter++
+        }else{
+            try{
+                New-Item -LiteralPath $(Split-Path -LiteralPath $script:VidOut -Parent) -ItemType Directory
+            }catch{
+                Write-ColorOut "Could not create $(Split-Path -LiteralPath $script:VidOut -Parent) - aborting!" -ForegroundColor Red
+                $counter++
+            }
+        }
+    }
+    if($counter -eq 0){
+        return $true
+    }else{
+        return $false
+    }
+}
+
+# DEFINITION: Start everything:
+Function Start-Everything(){
+    if(Test-Everything -eq $false){
+        Start-Sound(0)
+        Invoke-Close
+    }else{
+        Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
+            while($true){
+                $MyShell = New-Object -com "Wscript.Shell"
+                $MyShell.sendkeys("{F15}")
+                Start-Sleep -Seconds 300
+            }
+        } | Out-Null
+
+        $ffmpeg_arguments = " -i `"$script:VidInA`" -i `"$script:VidInB`" -hide_banner -filter_complex `"[1:v]format=yuva444p,lut=c3=128,negate[video2withAlpha],[0:v][video2withAlpha]overlay[out]`" -map `"[out]`" -c:v libx264 -pix_fmt yuv444p -preset veryslow -intra -crf 10 -an -map_metadata -1 `"$script:VidOut`""
+        Write-Host "FFmpeg Arguments: $ffmpeg_arguments`r`n" -ForegroundColor Yellow
+        
+        Start-Process -FilePath $script:encoder -ArgumentList $ffmpeg_arguments -Wait -NoNewWindow
+
+        Get-RSJob | Stop-RSJob
+        Start-Sleep -Milliseconds 25
+        Get-RSJob | Remove-RSJob
+
+        Write-ColorOut "Done!" -ForegroundColor Green
+        Start-Sound(1)
+    }
+}
+
+
+# ==================================================================================================
+# ==============================================================================
+#   Programming GUI & starting everything:
+# ==============================================================================
+# ==================================================================================================
+
+if($GUI_direct -eq "GUI"){
+    if((Test-Path -LiteralPath "$($PSScriptRoot)/compare_via_ffmpeg.xaml" -PathType Leaf)){
+        $inputXML = Get-Content -Path "$($PSScriptRoot)/compare_via_ffmpeg.xaml" -Encoding UTF8
+    }else{
+        Write-ColorOut "Could not find $($PSScriptRoot)/compare_via_ffmpeg.xaml - GUI can therefore not start." -ForegroundColor Red
+        Pause
+        Exit
+    }
+    
+    [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+    [xml]$xaml = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
+    $reader=(New-Object System.Xml.XmlNodeReader $xaml)
+    try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
+    catch{
+        Write-ColorOut "Unable to load Windows.Markup.XamlReader. Usually this means that you haven't installed .NET Framework. Please download and install the latest .NET Framework Web-Installer for your OS: " -ForegroundColor Red
+        Write-ColorOut "https://duckduckgo.com/?q=net+framework+web+installer&t=h_&ia=web"
+        Write-ColorOut "Alternatively, start this script with '-GUI_Direct `"direct`"' (w/o single-quotes) to run it via CLI (find other parameters via '-Get-Help compare_via_ffmpeg.ps1 -detailed'." -ForegroundColor Yellow
+        Pause
+        Exit
+    }
+    $xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+
+    if($getWPF -ne 0){
+        Write-ColorOut "Found the following interactable elements:`r`n" -ForegroundColor Cyan
+        Get-Variable WPF*
+        Pause
+        Exit
+    }
+
+    # Fill the TextBoxes and buttons with user parameters:
+    $WPFtextBoxInA.Text = $VidInA
+    $WPFtextBoxInB.Text = $VidInB
+    $WPFtextBoxOut.Text = $VidOut
+
+    # DEFINITION: Buttons:
+    $WPFbuttonStart.Add_Click({
+        $Form.WindowState = 'Minimized'
+
+        $VidInA = $WPFtextBoxInA.Text
+        $VidInB = $WPFtextBoxInB.Text
+        $VidOut = $WPFtextBoxOut.Text
+
+        Start-Everything
+
+        $Form.WindowState = 'Normal'
+    })
+    $WPFbuttonSearchInA.Add_Click({Get-Folder("VidA")})
+    $WPFbuttonSearchInB.Add_Click({Get-Folder("VidB")})
+    $WPFbuttonSearchOut.Add_Click({Get-Folder("Out")})
+    $WPFbuttonClose.Add_Click({
+        Invoke-Close
+    })
+
+    # DEFINITION: Start GUI
+    $Form.ShowDialog() | Out-Null
+}else{
+    Start-Everything
+}

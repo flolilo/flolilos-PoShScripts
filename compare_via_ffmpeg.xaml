@@ -1,0 +1,67 @@
+<Window x:Class="flilolosFFmpegScripts.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="flilolo's FFmpeg-Compare v1.1" Height="200" Width="700" ResizeMode="CanMinimize">
+    <Grid Background="#FFB3B6B5">
+        <TextBlock x:Name="textBlockInA"
+            Text="Path Video 1:" TextAlignment="Right" TextWrapping="Wrap"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="15,23,0,0"
+            Height="22" Width="80"
+        />
+        <TextBlock x:Name="textBlockInB"
+        Text="Path Video 2:" TextAlignment="Right" TextWrapping="Wrap"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="15,53,0,0" 
+            Height="22" Width="80"
+        />
+        <TextBlock x:Name="textBlockOut"
+            Text="Output-Path:" TextAlignment="Right" TextWrapping="Wrap"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="15,83,0,0"
+            Height="22" Width="80" 
+        />
+        <TextBox x:Name="textBoxInA"
+            Text="VidA"
+            VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="110,20,0,0"
+            Height="22" Width="450" 
+        />
+        <TextBox x:Name="textBoxInB"
+            Text="VidB"
+            VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="110,50,0,0" 
+            Height="22" Width="450"
+        />
+        <TextBox x:Name="textBoxOut"
+            Text="VidOut"
+            VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="110,80,0,0"
+            Height="22" Width="450" 
+        />
+        <Button x:Name="buttonSearchInA"
+            Content="Find..."
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="575,20,0,0"
+            Height="22" Width="90"
+        />
+        <Button x:Name="buttonSearchInB"
+            Content="Find..."
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="575,50,0,0" Width="90" Height="22"
+        />
+        <Button x:Name="buttonSearchOut"
+            Content="Find..."
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="575,80,0,0"
+            Height="22" Width="90" 
+        />
+        <Button x:Name="buttonStart"
+            Content="START"
+            VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,20"
+            Height="22" Width="110"
+        />
+        <Button x:Name="buttonClose"
+            Content="EXIT"
+            VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,40,20"
+            Height="22" Width="60"
+        />
+    </Grid>
+</Window>
