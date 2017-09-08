@@ -230,7 +230,7 @@ Function Start-Upload(){
         [string]$catalogname,
         [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
     )
-    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $PathPC -PathType Container) -ne $true){
+    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$PathPC" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
         Start-Sound(0)
         Start-Sleep -Seconds 5
@@ -254,7 +254,7 @@ Function Start-Download(){
         [string]$catalogname,
         [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
     )
-    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $PathPC -PathType Container) -ne $true){
+    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$PathPC" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
         Start-Sound(0)
         Start-Sleep -Seconds 5
@@ -307,6 +307,14 @@ Function Start-Everything(){
     } | Out-Null
 
     Get-UserValues
+
+    Write-ColorOut "-upDown`t`t=`t$script:upDown" -ForegroundColor Yellow
+    Write-ColorOut "-toProcess`t=`t$script:toProcess" -ForegroundColor Yellow
+    Write-ColorOut "-LR_path`t=`t$script:LR_path" -ForegroundColor Yellow
+    Write-ColorOut "-C1_path`t=`t$script:C1_path" -ForegroundColor Yellow
+    Write-ColorOut "-server_path`t=`t$script:server_path" -ForegroundColor Yellow
+    Start-Sleep -Seconds 5
+
     for($i=0; $i -lt $script:toProcess.Length; $i++){
         if($script:upDown -eq "up"){  
             Start-Upload -catalogname $script:toProcess[$i]

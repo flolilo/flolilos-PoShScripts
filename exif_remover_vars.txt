@@ -1,2 +1,2 @@
-artist_name = "Enter your name here"
-copyright_text = "Enter your copyright information here"
+artist_name = Enter your name here
+copyright_text = Enter your copyright information here
