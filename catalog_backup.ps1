@@ -60,8 +60,6 @@ param(
     [int]$Delete=-1
 )
 
-#DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # Checking if PoshRSJob is installed:

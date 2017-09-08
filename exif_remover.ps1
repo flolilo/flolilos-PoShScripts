@@ -41,7 +41,6 @@ param(
     [string]$path = (Get-Location).Path
 )
 
-
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
@@ -94,9 +93,37 @@ Function Write-ColorOut(){
     if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
 }
 
+# DEFINITION: For the auditory experience:
+Function Start-Sound($success){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+
+        .NOTES
+            Date: 2018-08-22
+
+        .PARAMETER success
+            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound(1)
+    #>
+    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
+    if($success -eq 1){
+        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+    }else{
+        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    }
+    $sound.Play()
+}
+
 if((Test-Path -LiteralPath $encoder -PathType Leaf) -eq $false){
     if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $false){
         Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red
+        Start-Sound(0)
         Exit
     }else{
         $encoder = "$($PSScriptRoot)\exiftool.exe"
@@ -108,6 +135,7 @@ if((Test-Path -LiteralPath $path -PathType Container) -eq $true){
     $files = Get-ChildItem -LiteralPath $path -Filter *.jpg
 }else{
     Write-ColorOut "Path not found - aborting!" -ForegroundColor Red
+    Start-Sound(0)
     Exit
 }
 
@@ -140,3 +168,4 @@ while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -gt 0){
 Start-Sleep -Milliseconds 250
 
 Write-ColorOut "Done!" -ForegroundColor Green
+Start-Sound(1)
