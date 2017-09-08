@@ -1,123 +1,387 @@
 ﻿# Flo's Foobar-MP3-Copy-Script
-# Foobar-Strategie: %Artist%\[%Album%\][%Track% - ]Name.mp3
+# Foobar-Strategy: %Artist%\[%Album%\][%Track% - ]Name.mp3
+
+<#
+    .SYNOPSIS
+        Renames files to ASCII-standard & moves files from artist's and album's folders to provide better file-organisation
+
+    .DESCRIPTION
+        My Foobar's convert-strategy is "%Artist%\[%Album%\][%Track% - ]Name.mp3". By doing so, some files are orphaned in their respective folders, so there are more clicks needed to get to them.
+        This script will look forfiles with non-ASCII characters and rename them and then will move orphaned files up one folder at a time.
+
+    .NOTES
+        Version:        1.2
+        Author:         flolilo
+        Creation Date:  2017-09-09
+        Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
+        applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
+        on the WWW). However, some parts are copies or modifications of very genuine code - see
+        the "CREDIT:"-tags to find them.
+
+    .PARAMETER paraInput
+        Path to your MP3s.
+    .PARAMETER rename
+        1 enables renaming to ASCII-standard, 0 disables.
+    .PARAMETER move
+        1 enables moving files if they are oprhaned, 0 disables.
+    .PARAMETER debug
+        If enabled (by setting to 1), the script will run all commands with -Whatif
+
+    .INPUTS
+        None.
+    .OUTPUTS
+        None.
+
+    .EXAMPLE
+        .\foobar_datamover.ps1 -paraInput "D:\My Music" -rename 1 -move 1 -debug 0
+#>
 param(
     [string]$paraInput = "D:\Temp\mp3_auto",
-    [int]$renameOnly = 0
+    [int]$rename = 1,
+    [int]$move = 1,
+    [int]$debug = 0
 )
+$WhatIfPreference = $(if($debug -eq 1){$true}else{$false})
 
-Clear-Host
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+
+# DEFINITION: Making Write-Host much, much faster:
+Function Write-ColorOut(){
+    <#
+        .SYNOPSIS
+            A faster version of Write-Host
+        
+        .DESCRIPTION
+            Using the [Console]-commands to make everything faster.
+
+        .NOTES
+            Date: 2017-09-08
+        
+        .PARAMETER Object
+            String to write out
+        
+        .PARAMETER ForegroundColor
+            Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
+        
+        .PARAMETER BackgroundColor
+            Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
+        
+        .PARAMETER NoNewLine
+            When enabled, no line-break will be created.
+        
+        .EXAMPLE
+            Write-ColorOut "Hello World!" -ForegroundColor Green -NoNewLine
+    #>
+    param(
+        [string]$Object,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$ForegroundColor=[Console]::ForegroundColor,
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$BackgroundColor=[Console]::BackgroundColor,
+        [switch]$NoNewLine=$false
+    )
+    $old_fg_color = [Console]::ForegroundColor
+    $old_bg_color = [Console]::BackgroundColor
+    
+    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $ForeGroundColor}
+    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $BackgroundColor}
+
+    if($NoNewLine -eq $false){
+        [Console]::WriteLine($Object)
+    }else{
+        [Console]::Write($Object)
+    }
+    
+    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $old_fg_color}
+    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
+}
+
+# DEFINITION: For the auditory experience:
+Function Start-Sound($success){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+
+        .NOTES
+            Date: 2018-08-22
+
+        .PARAMETER success
+            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound(1)
+    #>
+    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
+    if($success -eq 1){
+        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+    }else{
+        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    }
+    $sound.Play()
+}
+
 
 if((Test-Path -Path $paraInput -PathType Container) -eq $false){
-    Write-Host "FOLDER NON-EXISTENT!" -ForegroundColor Red
+    Write-ColorOut "FOLDER NON-EXISTENT!" -ForegroundColor Red
     Start-Sleep -Seconds 2
     Exit
 }
 
+Function Start-Replacing(){
+    param(
+        [string]$userIn
+    
+        )
+    $userIn = $userIn.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")")
+
+    return $userIn
+}
+
 Function Start-Renaming(){
-    Write-Host "$(Get-Date -Format "dd.MM.yy - HH:mm") - Renaming files..." -ForegroundColor Cyan
-    $renamemp3 = @(Get-ChildItem -Path $script:paraInput -Filter "*.mp3" -Recurse)
-    $renamemp3_path = $renamemp3 | ForEach-Object {$_.Directory}
-    $renamemp3_name = $renamemp3 | ForEach-Object {$_.Name}
-    for($i=0; $i -lt $renamemp3.Length; $i++){
-        $old_mp3 = $renamemp3_name[$i]
-        $new_mp3 = $old_mp3.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_")
+    [int]$errorcounter = 0
+    [array]$artist = @()
+    [array]$mp3 = @()
+
+    $artist = Get-ChildItem -Path $script:paraInput -Directory | ForEach-Object {
+        [PSCustomObject]@{
+            FullName = $_.FullName
+            BaseName = $_.BaseName
+            Parent = (Split-Path -Path $_.FullName -Parent)
+            album = @(Get-ChildItem -Path $_.FullName -Directory | ForEach-Object {
+                [PSCustomObject]@{
+                    FullName = $_.FullName
+                    BaseName = $_.BaseName
+                    Parent = (Split-Path -Path $_.FullName -Parent)
+                }
+            })
+        }
+    }
+    $mp3 = Get-ChildItem -Path $script:paraInput -Filter "*.mp3" -File -Recurse | ForEach-Object {
+        [PSCustomObject]@{
+            FullName = $_.FullName
+            BaseName = $_.BaseName
+            Parent = (Split-Path -Path $_.FullName -Parent)
+            Extension = $_.Extension
+        }
+    }
+    $mp3 = $mp3 | Sort-Object -Property FullName,Parent,BaseName,Extension
+    $mp3 | Out-Null
+    $artist = $artist | Sort-Object -Property FullName,Parent,BaseName,Extension
+    $artist | Out-Null
+    for($i=0; $i -lt $artist.length; $i++){
+        $artist[$i].album = $artist[$i].album | Sort-Object -Property FullName,Parent,BaseName,Extension
+        $artist[$i].album | Out-Null
+    }
+
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy - HH:mm") - Renaming mp3s..." -ForegroundColor Cyan
+    for($i=0; $i -lt $mp3.Length; $i++){
+        [string]$old_mp3 = $mp3[$i].BaseName
+        $old_mp3 += $mp3[$i].Extension
+        [string]$new_mp3 = Start-Replacing $mp3[$i].BaseName
+        $new_mp3 += $mp3[$i].Extension
         if($new_mp3 -notlike $old_mp3){
-            Write-Host "Renaming from `"$old_mp3`" to `"$new_mp3`"..." -ForegroundColor Yellow
-            try{Rename-Item -Path "$($renamemp3_path[$i])\$old_mp3" -NewName "$($renamemp3_path[$i])\$new_mp3"}
-            catch{Write-Host "RENAMING FAILED" -ForegroundColor Red}
+            Write-ColorOut "`"$old_mp3`"`t`t-> `"$new_mp3`"" -ForegroundColor Gray
+            try{
+                Rename-Item -Path "$($mp3[$i].Parent)\$old_mp3" -NewName "$($mp3[$i].Parent)\$new_mp3" -WhatIf:$WhatIfPreference
+            }
+            catch{
+                Write-ColorOut "Renaming failed!" -ForegroundColor Magenta
+                $errorcounter++
+            }
         }Else{
-            Write-Host "No renaming (`"$old_mp3`" equals `"$new_mp3`")"
+            Write-ColorOut "`"$old_mp3`"`t`t== `"$new_mp3`"" -ForegroundColor DarkGreen
         }
     }
     Start-Sleep -Seconds 1
 
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy - HH:mm") - Renaming folders..." -ForegroundColor Cyan
-    $renamefolder = @(Get-ChildItem -Path $script:paraInput -Directory -Recurse | Sort-Object -Descending Length,FullName)
-    $renamefolder_path = Split-Path -Path $renamefolder.FullName -Parent
-    $renamefolder_name = $renamefolder | ForEach-Object {$_.BaseName}
-    for($i=0; $i -lt $renamefolder.Length; $i++){
-        $renamefolder_path = Split-Path -Path $($renamefolder[$i]).FullName -Parent
-        $old_folders = $renamefolder_name[$i]
-        $new_folders = $old_folders.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","")
-        if($new_folders -notlike $old_folders){
-            Write-Host "Renaming from `"$old_folders`" to `"$new_folders`"..." -ForegroundColor Yellow
-            try{Rename-Item -Path "$renamefolder_path\$old_folders" -NewName "$new_folders"}
-            catch{Write-Host "RENAMING FAILED" -ForegroundColor Red}
-        }Else{
-            Write-Host "No renaming (`"$old_folders`" equals `"$new_folders`")"
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy - HH:mm") - Renaming folders..." -ForegroundColor Cyan
+    for($i=0; $i -lt $artist.Length; $i++){
+        for($j=0; $j -lt $artist[$i].album.Length; $j++){
+            $old_album = $artist[$i].album[$j].BaseName
+            $new_album = Start-Replacing $artist[$i].album[$j].BaseName
+            if($new_album -notlike $old_album){
+                Write-ColorOut "`"$old_album`"`t`t-> `"$new_album`"" -ForegroundColor Gray
+                try{
+                    Rename-Item -Path "$($artist[$i].album[$j].Parent)\$old_album" -NewName "$new_album" -WhatIf:$WhatIfPreference
+                }
+                catch{
+                    Write-ColorOut "Renaming failed!" -ForegroundColor Magenta
+                    $errorcounter++
+                }
+            }Else{
+                Write-ColorOut "`"$old_album`"`t`t== `"$new_album`"" -ForegroundColor DarkGreen
+            }
         }
-        Start-Sleep -Milliseconds 1
+        Start-Sleep -Milliseconds 25
+        $old_artist = $artist[$i].BaseName
+        $new_artist = Start-Replacing $artist[$i].BaseName
+        if($new_artist -notlike $old_artist){
+            Write-ColorOut "`"$old_artist`"`t`t-> `"$new_artist`"" -ForegroundColor Gray
+            try{
+                Rename-Item -Path "$($artist[$i].Parent)\$old_artist" -NewName "$new_artist" -WhatIf:$WhatIfPreference
+            }
+            catch{
+                Write-ColorOut "Renaming failed!" -ForegroundColor Magenta
+                $errorcounter++
+            }
+        }Else{
+            Write-ColorOut "`"$old_artist`"`t`t== `"$new_artist`"" -ForegroundColor DarkGreen
+        }
     }
     Start-Sleep -Seconds 1
+
+    if($errorcounter -ne 0){
+        Write-ColorOut "ERRORS ENCOUNTERED!" -ForegroundColor Magenta
+        Start-Sound(0)
+        Start-Sleep -Seconds 15
+        # return $false
+    }else{
+        Write-ColorOut "So far, everything went fine." -ForegroundColor Green
+        # return $true
+    }
 }
 
 Function Start-Moving(){
-    Write-Host "$(Get-Date -Format "dd.MM.yy - HH:mm") - Moving files..." -ForegroundColor Cyan
-    for($loop=0; $loop -lt 2; $loop++){
-        [array]$artist =  @(Get-ChildItem -Path $script:paraInput -Directory)
-        [array]$artist_path = @($artist | ForEach-Object {$_.FullName})
-        [array]$artist_name = @($artist | ForEach-Object {$_.BaseName})
-        Write-Host "`r`nLoop $($loop + 1) / 2" -ForegroundColor Cyan
-        for($i=0; $i -lt $artist_path.Length; $i++){
-            Write-Host "$($artist_name[$i])" -ForegroundColor Red
-            [array]$album =  @(Get-ChildItem -Path $($artist_path[$i]) -Directory)
-            [array]$album_path = @($album | ForEach-Object {$_.FullName})
-            [array]$album_name = @($album | ForEach-Object {$_.BaseName})
-            [array]$artist_mp3 = @(Get-ChildItem -Path $($artist_path[$i]) -Filter "*.mp3")
-            [array]$artist_mp3_path = @($artist_mp3 | ForEach-Object {$_.FullName})
-            [array]$artist_mp3_name = @($artist_mp3 | ForEach-Object {$_.Name})
-            foreach($bla in $album_name){Write-Host "|------ $bla" -ForegroundColor Yellow}
-            foreach($bla in $artist_mp3_name){Write-Host "|------ $bla"}
-            if($album_path.Length -eq 0 -and $artist_mp3_path.Length -eq 0){
-                Write-Host "No files in $($artist_path[$i]) - Removing artist-folder..." -ForegroundColor Magenta
-                try{Remove-Item -Path $($artist_path[$i]) -Force}
-                catch{Write-Host "REMOVING FAILED!" -ForegroundColor Red}
-            }elseif($album_path.Length -eq 0 -and $artist_mp3_path.Length -eq 1){
-                Write-Host "1 file and no album-folder in $($artist_path[$i]) - Moving file up and removing folder..." -ForegroundColor Yellow
-                try{
-                    Move-Item -Path $($artist_mp3_path[0]) -Destination (Split-Path -Parent -Path $($artist_path[0]))
-                    Start-Sleep -Milliseconds 1
-                    Remove-Item -Path $($artist_path[$i]) -Force
-                }
-                catch{Write-Host "(RE)MOVING FAILED!" -ForegroundColor Red}
-            }elseif($album_path.Length -eq 1){
-                Write-Host "1 album-folder in $($artist_path[$i]) - Moving files up and removing album-folder..." -ForegroundColor Yellow
-                try{
-                    Get-ChildItem -Path $album_path[0] | ForEach-Object {Move-Item -Path $_.FullName -Destination (Split-Path -Parent -Path (Split-Path -Parent -Path $_.FullName))}
-                    Start-Sleep -Milliseconds 1
-                    Remove-Item -Path $album_path[0] -Force
-                }
-                catch{Write-Host "(RE)MOVING FAILED!" -ForegroundColor Red}
-            }elseif($album_path.Length -gt 1){
-                for($j = 0; $j -lt $album_path.Length; $j++){
-                    [array]$album_mp3 = @(Get-ChildItem -Path $album_path[$j] -Filter "*.mp3")
-                    [array]$album_mp3_path = @($album_mp3 | ForEach-Object {$_.FullName})
-                    [array]$album_mp3_name = @($album_mp3 | ForEach-Object {$_.Name})
-                    foreach($bla in $album_mp3_name){Write-Host "        |-------$bla"}
-                    if($album_mp3_path.Length -eq 0){
-                        Write-Host "No file in album-folder - removing album-folder..." -ForegroundColor Magenta
-                        try{Remove-Item -Path $($album_path[$j]) -Force}
-                        catch{Write-Host "REMOVING FAILED!" -ForegroundColor Red}
-                    }elseif($album_mp3_path.Length -eq 1){
-                        Write-Host "1 File in album-path - Moving files up and removing album-folder..." -ForegroundColor Yellow
-                        try{
-                            Get-ChildItem -Path $($album_path[$j]) | ForEach-Object {Move-Item -Path $_.FullName -Destination (Split-Path -Parent -Path (Split-Path -Parent -Path $_.FullName))}
-                            Start-Sleep -Milliseconds 1
-                            Remove-Item -Path $($album_path[$j]) -Force
-                        }
-                        catch{Write-Host "(RE)MOVING FAILED!" -ForegroundColor Red}
+    Write-ColorOut "$(Get-Date -Format "dd.MM.yy - HH:mm") - Moving files..." -ForegroundColor Cyan
+    [int]$errorcounter = 0
+    [int]$changecounter = 100
+    [int]$loop = 0
+
+    while($changecounter -ne 0){
+        $loop++
+        $changecounter = 0
+        [array]$artist = @()
+        [array]$album = @()
+        [array]$artist_mp3 = @()
+        [array]$album_mp3 = @()
+        Write-ColorOut "`r`nLoop $loop" -ForegroundColor Cyan
+
+        $artist = Get-ChildItem -Path $script:paraInput -Directory | ForEach-Object {
+            [PSCustomObject]@{
+                FullName = $_.FullName
+                BaseName = $_.BaseName
+                album = @(Get-ChildItem -Path $_.FullName -Directory | ForEach-Object {
+                    [PSCustomObject]@{
+                        mp3 = @(Get-ChildItem -Path $_.FullName -Filter "*.mp3" -File -Recurse | ForEach-Object {
+                            [PSCustomObject]@{
+                                FullName = $_.FullName
+                                Name = $_.Name
+                                BaseName = $_.BaseName
+                                Extension = $_.Extension
+                            }
+                        })
+                        FullName = $_.FullName
+                        BaseName = $_.BaseName
                     }
-                    Start-Sleep -Milliseconds 1
-                }
+                })
+                mp3 = @(Get-ChildItem -Path $_.FullName -Filter "*.mp3" -File)
             }
         }
-        Start-Sleep -Milliseconds 1
+
+        for($i=0; $i -lt $artist.Length; $i++){
+            Write-ColorOut $artist[$i].BaseName -ForegroundColor White
+            foreach($j in $artist[$i].album){
+                Write-ColorOut "|---- $($j.BaseName)" -ForegroundColor Gray
+                foreach($k in $j.mp3){
+                    Write-ColorOut "    |---- $($k.Name)" -ForegroundColor DarkGray
+                }
+            }
+            foreach($j in $artist[$i].mp3){
+                Write-ColorOut "|---- $($j.Name)" -ForegroundColor DarkCyan
+            }
+        }
+        Start-Sleep -Seconds 5
+
+        for($i=0; $i -lt $artist.Length; $i++){
+            if($artist[$i].album.Length -gt 1){
+                for($j=0; $j -lt $artist[$i].album.Length; $j++){
+                    if($artist[$i].album[$j].mp3.Length -lt 3){
+                        Write-ColorOut "$($artist[$i].album[$j].BaseName)`thas $($artist[$i].album[$j].mp3.Length) mp3s - deleting album-folder." -ForegroundColor DarkGray
+                        $changecounter++
+                        for($k=0; $k -lt $artist[$i].album[$j].mp3.Length; $k++){
+                            try{
+                                Move-Item -Path $artist[$i].album[$j].mp3[$k].FullName -Destination "$($artist[$i].FullName)\$($artist[$i].album[$j].mp3[$k].BaseName)$($artist[$i].album[$j].mp3[$k].Extension)"  -WhatIf:$WhatIfPreference
+                            }catch{
+                                Write-ColorOut "Moving failed!" -ForegroundColor Magenta
+                                $errorcounter++
+                            }
+                        }
+                        Start-Sleep -Milliseconds 5
+                        try{
+                            Remove-Item $artist[$i].album[$j].FullName -WhatIf:$WhatIfPreference
+                            Start-Sleep -Milliseconds 5
+                        }catch{
+                            Write-ColorOut "Removing failed!" -ForegroundColor Magenta
+                            $errorcounter++
+                        }
+                    }else{
+                        Write-ColorOut "$($artist[$i].BaseName)`tis okay." -ForegroundColor DarkGreen
+                    }
+                }
+            }elseif($artist[$i].album.Length -eq 1 -and $artist[$i].mp3.Length -lt 3){
+                Write-ColorOut "$($artist[$i].BaseName)`thas $($artist[$i].album.Length) album and $($artist[$i].mp3.Length) root-mp3s - deleting album-folder." -ForegroundColor Gray
+                $changecounter++
+                for($j=0; $j -lt $artist[$i].album[0].mp3.Length; $j++){
+                    try{
+                        Move-Item -Path $artist[$i].album[0].mp3[$j].FullName -Destination "$($artist[$i].FullName)\$($artist[$i].album[0].mp3[$j].Name)" -WhatIf:$WhatIfPreference
+                    }catch{
+                        Write-ColorOut "Moving failed!" -ForegroundColor Magenta
+                        $errorcounter++
+                    }
+                }
+                Start-Sleep -Milliseconds 5
+                try{
+                    Remove-Item $artist[$i].album[0].FullName -WhatIf:$WhatIfPreference
+                    Start-Sleep -Milliseconds 5
+                }catch{
+                    Write-ColorOut "Removing failed!" -ForegroundColor Magenta
+                    $errorcounter++
+                }
+            }elseif($artist[$i].album.Length -eq 0 -and $artist[$i].mp3.Length -lt 3){
+                Write-ColorOut "$($artist[$i].BaseName)`thas $($artist[$i].album.Length) albums and $($artist[$i].mp3.Length) root-mp3s - deleting artist-folder." -ForegroundColor DarkCyan
+                $changecounter++
+                for($j=0; $j -lt $artist[$i].mp3.Length; $j++){
+                    try{
+                        Move-Item -Path $artist[$i].mp3[$j].FullName -Destination "$(Split-Path -Path $artist[$i].FullName -Parent)\$($artist[$i].BaseName)_-_$($artist[$i].mp3[$j].BaseName)$($artist[$i].mp3[$j].Extension)"  -WhatIf:$WhatIfPreference
+                    }catch{
+                        Write-ColorOut "Moving failed!" -ForegroundColor Magenta
+                        $errorcounter++
+                    }
+                }
+                Start-Sleep -Milliseconds 5
+                try{
+                    Remove-Item $artist[$i].FullName -WhatIf:$WhatIfPreference
+                    Start-Sleep -Milliseconds 5
+                }catch{
+                    Write-ColorOut "Removing failed!" -ForegroundColor Magenta
+                }
+            }else{
+                Write-ColorOut "$($artist[$i].BaseName)`tis okay." -ForegroundColor DarkGreen
+            }
+        }
+        Start-Sleep -Seconds 1
+    }
+
+    if($errorcounter -ne 0){
+        Write-ColorOut "ERRORS ENCOUNTERED!" -ForegroundColor Magenta
+        Start-Sound(0)
+        Start-Sleep -Seconds 15
+        # return $false
+    }else{
+        Write-ColorOut "So far, everything went fine." -ForegroundColor Green
+        # return $true
     }
 }
 
-Start-Renaming
-if($renameOnly -eq 0){Start-Moving}
+if($rename -eq 1){
+    Start-Renaming
+}
+if($move -eq 1){
+    Start-Moving
+}
 
-Set-Location $PSScriptRoot
-Write-Host "`r`nFERTIG!" -ForegroundColor Green
+Write-ColorOut "`r`nDONE!" -ForegroundColor Green
+Start-Sound(1)
 Pause
