@@ -9,13 +9,13 @@
 
     .INPUTS
         exiftool.exe
-        exif_remover_vars.txt, formatted in UTF8 for copyright-values (if not provided via parameters).
+        (optional) exif_remover_vars.txt, formatted in UTF8 for copyright-values (if not provided via parameters).
 
     .OUTPUTS
         none.
 
     .NOTES
-        Version:        1.1
+        Version:        1.2
         Author:         flolilo
         Creation Date:  2017-09-08
 
@@ -49,9 +49,8 @@ if($add_copyright -eq 1 -and ($artist_name.Length -eq 0 -or $copyright_text.Leng
         $artist_name = $temp.artist_name
         $copyright_text = $temp.copyright_text
     }else{
-        Write-Host "ERROR - no copyright values and no $($PSScriptRoot)\exif_remover_vars.txt!" -ForegroundColor Red
-        Start-Sleep -Seconds 5
-        Exit
+        try{[string]$artist_name = Read-Host "Enter artist name here"}catch{continue}
+        try{[string]$copyright_text = Read-Host "Enter copyright text here"}catch{continue}
     }
 }
 
