@@ -5,18 +5,19 @@
         Removes EXIF and IPTC information from images (especially JPEGs) and can also add a copyright to them.
 
     .DESCRIPTION
-        Uses exiftool.
+        Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
 
     .INPUTS
         exiftool.exe
+        exif_remover_vars.txt, formatted in UTF8 for copyright-values (if not provided via parameters).
 
     .OUTPUTS
         none.
 
     .NOTES
-        Version:        1.0
+        Version:        1.1
         Author:         flolilo
-        Creation Date:  2017-09-06
+        Creation Date:  2017-09-08
 
     .PARAMETER add_copyright
         Enables or disables writing of copyright-information (specified with -artist_name and -copyright_text).
@@ -35,11 +36,24 @@
 
 param(
     [int]$add_copyright = 0,
-    [string]$artist_name = "Unknown",
-    [string]$copyright_text = "No copyright information added",
+    [string]$artist_name = "",
+    [string]$copyright_text = "",
     [string]$encoder = "$($PSScriptRoot)\exiftool.exe",
-    [string]$path = (Get-Location).Path
+    [string]$path = (Get-Location).Path,
+    [int]$showvalues = 0
 )
+
+if($add_copyright -eq 1 -and ($artist_name.Length -eq 0 -or $copyright_text.Length -eq 0)){
+    if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -PathType Leaf)){
+        $temp = Get-Content -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -Raw -Encoding UTF8 | ConvertFrom-StringData
+        $artist_name = $temp.artist_name
+        $copyright_text = $temp.copyright_text
+    }else{
+        Write-Host "ERROR - no copyright values and no $($PSScriptRoot)\exif_remover_vars.txt!" -ForegroundColor Red
+        Start-Sleep -Seconds 5
+        Exit
+    }
+}
 
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -118,6 +132,13 @@ Function Start-Sound($success){
         $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
     }
     $sound.Play()
+}
+
+if($showvalues -ne 0){
+    Write-ColorOut $artist_name -ForegroundColor Gray
+    Write-ColorOut $copyright_text -ForegroundColor DarkGray
+    Pause
+    Exit
 }
 
 if((Test-Path -LiteralPath $encoder -PathType Leaf) -eq $false){
