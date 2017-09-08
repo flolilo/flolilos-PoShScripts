@@ -124,20 +124,20 @@ Function Write-ColorOut(){
 # DEFINITION: For the auditory experience:
 Function Start-Sound($success){
     <#
-    .SYNOPSIS
-        Gives auditive feedback for fails and successes
-    
-    .DESCRIPTION
-        Uses SoundPlayer and Windows's own WAVs to play sounds.
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
 
-    .NOTES
-        Date: 2018-08-22
+        .NOTES
+            Date: 2018-08-22
 
-    .PARAMETER success
-        If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
-    
-    .EXAMPLE
-        For success: Start-Sound(1)
+        .PARAMETER success
+            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound(1)
     #>
     $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
     if($success -eq 1){
@@ -154,6 +154,7 @@ Function Get-UserValues(){
         while($true){
             $script:upDown = Read-Host "Upload or download catalog(s)?"
             if($script:upDown -ne "up" -and $script:upDown -ne "down"){
+                Write-ColorOut "Invalid input - enter `"up`" or `"down`" (w/o quotes)" -ForegroundColor Magenta
                 continue
             }else{
                 break
@@ -166,6 +167,7 @@ Function Get-UserValues(){
             $option = [System.StringSplitOptions]::RemoveEmptyEntries
             $script:toProcess = (Read-Host "Which catalog(s) to process? Both: `"C1`",`"LR`"").Split($separator,$option)
             if("LR" -notin $script:toProcess -and "C1" -notin $script:toProcess){
+                Write-ColorOut "Invalid input - enter `"c1`" or `"lr`" (w/o quotes). For both, enter `"c1,lr`" (or vice versa)." -ForegroundColor Magenta
                 continue
             }else{
                 break
@@ -176,6 +178,7 @@ Function Get-UserValues(){
         while($true){
             $script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
             if($script:Delete -notin (0..2)){
+                Write-ColorOut "Invalid input." -ForegroundColor Magenta
                 continue
             }else{
                 break
@@ -191,18 +194,23 @@ Function Start-Upload(){
         [string]$catalogname,
         [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
     )
-
-    if($script:Delete -ne 0){
-        Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
-        Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
-            Remove-Item $_.FullName -Confirm:$script:confirm
+    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $PathPC -PathType Container) -ne $true){
+        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
+        Start-Sound(0)
+        Start-Sleep -Seconds 5
+        Exit
+    }else{
+        if($script:Delete -ne 0){
+            Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+            Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
+                Remove-Item $_.FullName -Confirm:$script:confirm
+            }
         }
+        Start-Sleep -Milliseconds 250
+        Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan
+        $archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:server_path\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
     }
-    Start-Sleep -Milliseconds 250
-    Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan
-    $archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
-    Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:server_path\$archive_name`" `"$PathPC\*`" $script:7z_up_suffix" -NoNewWindow -Wait
-
 }
 
 Function Start-Download(){
@@ -210,37 +218,42 @@ Function Start-Download(){
         [string]$catalogname,
         [string]$PathPC = $(if($catalogname -eq "C1"){$script:C1_path}elseif($catalogname -eq "LR"){$script:LR_path})
     )
-
-    Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
-    [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
-        [PSCustomObject]@{
-            fullpath = $_.FullName
-            name = $_.Name
-        }
-    }
-    if($archive.Length -gt 1){
-        Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
-        Write-ColorOut $archive.name -ForegroundColor Yellow
-        $archive | Sort-Object -Property Name -Descending
-        $archive
-        $archive = $archive[0]
-        Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan
-        Write-ColorOut $archive.name
-        Pause
-    }elseif($archive.Length -lt 1){
-        Write-ColorOut "No Catalog-Backups found - aborting!" -ForegroundColor Red
-        Pause
+    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $PathPC -PathType Container) -ne $true){
+        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
+        Start-Sound(0)
+        Start-Sleep -Seconds 5
         Exit
+    }else{
+        Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+        [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
+            [PSCustomObject]@{
+                fullpath = $_.FullName
+                name = $_.Name
+            }
+        }
+        if($archive.Length -gt 1){
+            Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
+            Write-ColorOut $archive.name -ForegroundColor Yellow
+            $archive | Sort-Object -Property Name -Descending
+            $archive
+            $archive = $archive[0]
+            Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan
+            Write-ColorOut $archive.name
+            Pause
+        }elseif($archive.Length -lt 1){
+            Write-ColorOut "No Catalog-Backups found - aborting!" -ForegroundColor Red
+            Pause
+            Exit
+        }
+
+        Write-ColorOut "Deleting existing files in $PathPC" -ForegroundColor Cyan
+        # Deleting old catalog-fiels on computer:
+        Get-ChildItem -Path $PathPC -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
+        Get-ChildItem -Path $PathPC -Recurse -Directory | Remove-Item -Confirm:$confirm
+
+        Write-ColorOut "Starting Copying" -ForegroundColor Cyan
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" -o`"$PathPC`" $script:7z_down_suffix" -NoNewWindow -Wait
     }
-
-    Write-ColorOut "Deleting existing files in $PathPC" -ForegroundColor Cyan
-    # Deleting old catalog-fiels on computer:
-    Get-ChildItem -Path $PathPC -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
-    Get-ChildItem -Path $PathPC -Recurse -Directory | Remove-Item -Confirm:$confirm
-
-    Write-ColorOut "Starting Copying" -ForegroundColor Cyan
-    Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" -o`"$PathPC`" $script:7z_down_suffix" -NoNewWindow -Wait
-
 }
 
 Function Start-Everything(){
@@ -262,11 +275,12 @@ Function Start-Everything(){
     }
 
     # DEFINITION: clean up:
-    Get-RSJob -Name "PreventStandby" | Stop-RSJob
+    Get-RSJob | Stop-RSJob
     Start-Sleep -Milliseconds 5
-    Get-RSJob -Name "PreventStandby" | Remove-RSJob
+    Get-RSJob | Remove-RSJob
 
     Start-Sound(1)
+    Pause
 }
 
 Start-Everything
