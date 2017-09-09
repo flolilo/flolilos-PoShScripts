@@ -179,6 +179,7 @@ if((Test-Path -LiteralPath $path -PathType Container) -eq $true){
     Start-Sound(0)
     Exit
 }
+Write-Progress -Activity "Searching JP(E)Gs..." -Status "Done" -Completed
 
 for($i=0; $i -lt $files.Length; $i++){
     if($sw.Elapsed.TotalMilliseconds -ge 500 -or $o -eq 0){
@@ -196,6 +197,7 @@ for($i=0; $i -lt $files.Length; $i++){
 while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -gt 0){
     Start-Sleep -Milliseconds 25
 }
+Write-Progress -Activity "Deleting EXIFs..." -Status "Done" -Completed
 Start-Sleep -Milliseconds 250
 
 if($add_copyright -eq 1){
@@ -216,6 +218,7 @@ if($add_copyright -eq 1){
 while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -gt 0){
     Start-Sleep -Milliseconds 25
 }
+Write-Progress -Activity "Adding Copyright..." -Status "Done" -Completed
 Start-Sleep -Milliseconds 250
 
 Write-ColorOut "Done!" -ForegroundColor Green
