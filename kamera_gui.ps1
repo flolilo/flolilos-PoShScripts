@@ -1,5 +1,6 @@
 ﻿# Flos Ueberwachungskamera-Tool, v2.7, 2017-03-07
 # Tested with PowerShell 5.1 (Win10)
+# BEWARE: This script is an OLD version of security-cam_gui.ps1
 # 
 param(
     [string]$paraEncoder = "C:\FFMPEG\binaries\ffmpeg.exe", # Pfad zu ffmeg.exe
