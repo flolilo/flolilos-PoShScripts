@@ -1,3 +1,9 @@
+#requires -version 3
+
+<#
+    .SYNOPSIS
+        Start both Outlook and OutlookGoogleCalendarSync
+#>
 param(
     [string]$outlook="C:\Program Files (x86)\Microsoft Office\root\Office16\OUTLOOK.EXE",
     [string]$OGCS="D:\Downloads\OutlookGoogleCalendarSync\OutlookGoogleCalendarSync.exe"
