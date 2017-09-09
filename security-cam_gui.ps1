@@ -7,7 +7,7 @@
         Benutzt FFmpeg zum Kodieren und Robocopy / Xcopy zum Kopieren.
     .NOTES
         Version:        3.0
-        Autor:          Florian Dolzer
+        Autor:          flolilo
         Datum:          25.7.2017
         Rechtliches:    Diese Software ist gratis und darf jederzeit weiterwerwendet und -entwickelt werden (bitte mit Namensnennung). Es wird keine Haftung fuer die Funktion des Skripts - oder durch es entstehende Schaeden in Form von Datenverlust o.Ae. - uebernommen. Der Grossteil des Skripts wurde von mir selbst geschrieben (oder von Quellen aus dem Internet abgeleitet und stark modifiziert). Teile, die Code Dritter enthalten, sind mit dem "#CREDIT"-Tag ausgewiesen.
     .PARAMETER encoder
@@ -35,21 +35,24 @@ param(
     [int]$multithread = 1,
     [int]$stayawake = 1,
     [int]$herunterfahren = 0,
+    [string]$GUI_Direct = "GUI",
     [int]$debug = 0
-    
 )
 
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
-# Usual ErrorAction: Stop: https://stackoverflow.com/a/21260623/8013879
 # Set standard ErrorAction to 'Stop':
-$PSDefaultParameterValues = @{}
-$PSDefaultParameterValues += @{'*:ErrorAction' = 'Stop'}
-$ErrorActionPreference = 'Stop'
+if($debug -eq 0){
+    # Usual ErrorAction: Stop: https://stackoverflow.com/a/21260623/8013879
+    $PSDefaultParameterValues = @{}
+    $PSDefaultParameterValues += @{'*:ErrorAction' = 'Stop'}
+    $ErrorActionPreference = 'Stop'
+}
 
 # If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
 [int]$getWPF = 0
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -63,8 +66,8 @@ Function Get-Folder($InOut){
     $folderdialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $folderdialog.rootfolder = "MyComputer"
     if($folderdialog.ShowDialog() -eq "OK"){
-        if($InOutMirror -eq "input"){$script:WPFtextBoxInput.Text = $folderdialog.SelectedPath}
-        if($InOutMirror -eq "output"){$script:WPFtextBoxOutput.Text = $folderdialog.SelectedPath}
+        if($InOutMirror -eq "input"){$script:WPFtextBoxIn.Text = $folderdialog.SelectedPath}
+        if($InOutMirror -eq "output"){$script:WPFtextBoxOut.Text = $folderdialog.SelectedPath}
     }
 }
 
@@ -519,207 +522,174 @@ Function Start-Everything(){
 
 # ==================================================================================================
 # ==============================================================================
-# Programming GUI & starting everything:
+#   Programming GUI & starting everything:
 # ==============================================================================
 # ==================================================================================================
 
-# GUI-Code (XAML)
-$inputXML = @"
-<Window x:Class="FlosFFmpegSkripte.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="Flos Ü-Kamera-Prog v3.0" Height="323" Width="735" ResizeMode="CanMinimize">
-    <Grid Background="#FFB3B6B5">
-        <TextBlock x:Name="textBlockWelcome" HorizontalAlignment="Left" Margin="112,20,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="32" Width="520" FontSize="18" TextAlignment="Center" Text="Willkommen bei Flos Überwachungskamera-Programm v3.0!"/>
-        <TextBlock x:Name="textBlockInput" HorizontalAlignment="Left" Margin="13,72,0,0" TextWrapping="Wrap" Text="Pfad SD-Karte:" VerticalAlignment="Top" Height="18" Width="80"/>
-        <TextBlock x:Name="textBlockOutput" HorizontalAlignment="Left" Margin="25,115,0,0" TextWrapping="Wrap" Text="Pfad am PC:" VerticalAlignment="Top" Height="18"/>
-        <TextBlock x:Name="textBlockMethode" HorizontalAlignment="Left" Margin="185,159,0,0" TextWrapping="Wrap" Text="Was soll getan werden?" VerticalAlignment="Top" Height="22"/>
-        <Button x:Name="buttonStart" Content="START" HorizontalAlignment="Center" Margin="285,259,332,0" VerticalAlignment="Top" Width="110" HorizontalContentAlignment="Center" ToolTip="Tipp: Verzeichnisse vor Beginn überprüfen!"/>
-        <Button x:Name="buttonClose" Content="Ende" HorizontalAlignment="Left" Margin="619,259,0,0" VerticalAlignment="Top" Width="60" ToolTip="Ciao!"/>
-        <Button x:Name="buttonSearchIn" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,70,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonSearchOut" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,113,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonProg" Content="Datei-Splitter" HorizontalAlignment="Left" Margin="50,259,0,0" VerticalAlignment="Top" Width="105" ToolTip="Zum Herausrechnen wichtiger Stellen."/>
-        <TextBox x:Name="textBoxInput" HorizontalAlignment="Left" Height="23" Margin="103,71,0,0" Text="sd-karten_inhalt\Movies" VerticalAlignment="Top" Width="500" ToolTip="SD-Karten-Verzeichnis. Nur nötig, falls auch kopiert wird." VerticalScrollBarVisibility="Disabled"/>
-        <TextBox x:Name="textBoxOutput" HorizontalAlignment="Left" Height="23" Margin="103,113,0,0" Text="X:\_NEUE_DATEIEN" VerticalAlignment="Top" Width="500" ToolTip="Ziel-Verzeichnis." VerticalScrollBarVisibility="Disabled"/>
-        <CheckBox x:Name="checkBoxHardware" Content="Hardware-Codierung" HorizontalAlignment="Left" Margin="200,192,0,0" VerticalAlignment="Top" ToolTip="Wenn aktiviert: geht schneller, kann aber Fehler erzeugen. Empfehlung: Bei Monika AN, bei Franz AUS." IsChecked="True" Width="153" Padding="4,-1,0,0"/>
-        <CheckBox x:Name="checkBoxShutdown" Content="Nach Beendigung herunterfahren (keine Funktion bei &quot;Zwischendateien löschen&quot;)" HorizontalAlignment="Left" Margin="200,211,0,0" VerticalAlignment="Top" ToolTip="Wenn alles fertig ist, fährt Computer herutner. Vorteilhaft, wenn Programm über Nacht läuft." Width="459" Padding="4,-1,0,0"/>
-        <CheckBox x:Name="checkBoxMultithread" Content="Multithreading" HorizontalAlignment="Left" Margin="200,231,0,0" VerticalAlignment="Top" Padding="4,-1,0,0" IsChecked="True" ToolTip="Rechnet effizienter, PC ist aber daneben kaum noch nutzbar. Gut, wenn über Nacht gerechnet wird."/>
-        <ComboBox x:Name="comboBoxMeth" HorizontalAlignment="Left" Margin="318,156,0,0" VerticalAlignment="Top" Width="186" IsReadOnly="True" SelectedIndex="0" ToolTip="Empfehlung: Standard-Auswahl.">
-            <ComboBoxItem Content="Kopieren &amp; Kodieren"/>
-            <ComboBoxItem Content="Kodieren"/>
-            <ComboBoxItem Content="Zwischendateien löschen"/>
-        </ComboBox>
-    </Grid>
-</Window>
-"@
- 
-[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
-[xml]$xaml = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
-$reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
-catch{
-    Write-Host "Unable to load Windows.Markup.XamlReader. Usually this means that you haven't installed .NET Framework. Please download and install the latest .NET Framework Web-Installer for your OS: " -NoNewline -ForegroundColor Red
-    Write-Host "https://www.google.com/webhp?q=net+framework+web+installer"
-    Write-Host "Alternatively, start this script with '-GUI_CLI_Direct `"CLI`"' (w/o single-quotes) to run it via CLI (find other parameters via '-Help 2' or via README-File ('-Help 1')." -ForegroundColor Yellow
-    Pause
-    Exit
-}
-$xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
-
-if($getWPF -ne 0){
-    Write-Host "Found the following interactable elements:`r`n" -ForegroundColor Cyan
-    Get-Variable WPF*
-    Pause
-    Exit
-}
-
-# Defining GUI-Values:
-$WPFtextBoxInput.Text = $sd_karte
-$WPFtextBoxOutput.Text = $ausgabe
-$WPFcomboBoxMeth.SelectedIndex = $modus
-$WPFcheckBoxHardware.IsChecked = $hardware
-$WPFcheckBoxShutdown.IsChecked = $herunterfahren
-$WPFcheckBoxMultithread.IsChecked = $multithread
-
-#===========================================================================
-#===========================================================================
-# Programming the buttons:
-#===========================================================================
-
-$WPFbuttonStart.Add_Click({
-    $script:InPath = $script:WPFtextBoxInput.Text
-    $script:OutPath = $script:WPFtextBoxOutput.Text
-    $script:modus = $script:WPFcomboBoxMeth.SelectedIndex
-    $script:hardware = $script:WPFcheckBoxHardware.IsChecked
-    $script:herunterfahren = $script:WPFcheckBoxShutdown.IsChecked
-    $script:multithread = $script:WPFcheckBoxMultithread.IsChecked
-    $schonweitertestA = Test-Path -Path $userOutput\progress_burnin_iteration.txt
-    $schonweitertestB = Test-Path -Path $userOutput\progress_concat_iteration.txt
-    $schonweitertestC = Test-Path -Path $userOutput\progress_quad_iteration.txt
-    if($herunterfahren -eq $true -and $debug -eq 0){
-        $herunterfahren = 1
-    }Else{
-        $herunterfahren = 0
+if($GUI_Direct -eq "GUI"){
+    # DEFINITION: Setting up GUI:
+    <# CREDIT:
+        code of this section (except from content of inputXML and small modifications) by
+        https://foxdeploy.com/series/learning-gui-toolmaking-series/
+    #>
+    if((Test-Path -LiteralPath "$($PSScriptRoot)/security-cam_gui.xaml" -PathType Leaf)){
+        $inputXML = Get-Content -Path "$($PSScriptRoot)/security-cam_gui.xaml" -Encoding UTF8
+    }else{
+        Write-ColorOut "Could not find $($PSScriptRoot)/security-cam_gui.xaml - GUI can therefore not start." -ForegroundColor Red
+        Pause
+        Exit
     }
-    if($multithread -eq $true){
-        $cores = Get-WmiObject -class win32_processor
-        [int]$multithread = $cores.NumberOfLogicalProcessors
-        $multithread--
-    }Else{
-        $multithread = 0
+
+    [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+    [xml]$xaml = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
+    $reader=(New-Object System.Xml.XmlNodeReader $xaml)
+    try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
+    catch{
+        Write-ColorOut "Unable to load Windows.Markup.XamlReader. Usually this means that you haven't installed .NET Framework. Please download and install the latest .NET Framework Web-Installer for your OS: " -ForegroundColor Red
+        Write-ColorOut "https://duckduckgo.com/?q=net+framework+web+installer&t=h_&ia=web"
+        Write-ColorOut "Alternatively, start this script with '-GUI_Direct `"CLI`"' (w/o single-quotes) to run it via CLI (find other parameters via '-showparams 1' '-Get-Help security-cam_gui.ps1 -detailed'." -ForegroundColor Yellow
+        Pause
+        Exit
     }
-    $Form.WindowState = 'Minimized'
-    $test = (Flo-Test $InPath $OutPath $userMethode)
-    if($test -eq $true){
-        Write-Host "Ab jetzt geht alles automatisch. Danke für die Geduld!" -ForegroundColor Cyan
-        Write-Host " "
-        $anfang_glob = Get-Date
-        Write-Host "Beginn um $(Get-Date -Format 'dd.MM.yy, HH:mm:ss')" -ForegroundColor Cyan
-        Write-Host " "
-        if($stayawake -eq 1){
-            Start-Process powershell -ArgumentList "$PSScriptRoot\preventsleep.ps1 -mode 1 -shutdown $userHerunterfahren" -WindowStyle Minimized
+    $xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+
+    if($getWPF -ne 0){
+        Write-ColorOut "Found the following interactable elements:`r`n" -ForegroundColor Cyan
+        Get-Variable WPF*
+        Pause
+        Exit
+    }
+
+    # Defining GUI-Values:
+    $WPFtextBoxIn.Text = $sd_karte
+    $WPFtextBoxOut.Text = $ausgabe
+    $WPFcomboBoxMeth.SelectedIndex = $modus
+    $WPFcheckBoxHardware.IsChecked = $hardware
+    $WPFcheckBoxShutdown.IsChecked = $herunterfahren
+    $WPFcheckBoxMultithread.IsChecked = $multithread
+
+    # Defining buttons:
+    $WPFbuttonStart.Add_Click({
+        $script:InPath = $script:WPFtextBoxIn.Text
+        $script:OutPath = $script:WPFtextBoxOut.Text
+        $script:modus = $script:WPFcomboBoxMeth.SelectedIndex
+        $script:hardware = $script:WPFcheckBoxHardware.IsChecked
+        $script:herunterfahren = $script:WPFcheckBoxShutdown.IsChecked
+        $script:multithread = $script:WPFcheckBoxMultithread.IsChecked
+        $schonweitertestA = Test-Path -Path $userOutput\progress_burnin_iteration.txt
+        $schonweitertestB = Test-Path -Path $userOutput\progress_concat_iteration.txt
+        $schonweitertestC = Test-Path -Path $userOutput\progress_quad_iteration.txt
+        if($herunterfahren -eq $true -and $debug -eq 0){
+            $herunterfahren = 1
+        }Else{
+            $herunterfahren = 0
         }
-        # Option "Kopieren, Kodieren"
-        if($modus -eq 0){
-            Write-Host "Arbeitsschritte: Kopieren -> Umbenennen -> Kodieren" -ForegroundColor Yellow
-            if($herunterfahren -eq 1){
-                Write-Host "PC wird nach Beendigung heruntergefahren." -ForegroundColor Green
-            }Else{
-                Write-Host "PC wird nach Beendigung nicht heruntergefahren." -ForegroundColor Green
-            }
-            Write-Host " "
-            Flo-Copy $InPath $userOutput
-            if($debug -eq 1){Pause}
-            Flo-Umbenenn $userOutput
-            if($debug -eq 1){Pause}
-            if($schonweitertestB -eq $false -and $schonweitertestC -eq $false){
-                Flo-KodiererBurnin $c_platte $encoder $OutPath $multithread
-                if($debug -eq 1){Pause}
-            }Else{
-                Write-Host "Burn-In bereits früher durchgeführt." -ForegroundColor Yellow
-            }
-            if($schonweitertestC -eq $false){
-                Flo-KodiererConcat $c_platte $encoder $OutPath $multithread
-                if($debug -eq 1){Pause}
-            }Else{
-                Write-Host "Zusammenfügen der Dateien bereits früher durchgeführt." -ForegroundColor Yellow
-            }
-            Flo-KodiererQuad $encoder $OutPath $multithread $hardware
-            if($debug -eq 1){Pause}
-            #Flo-Loesch $OutPath 0
+        if($multithread -eq $true){
+            $cores = Get-WmiObject -class win32_processor
+            [int]$multithread = $cores.NumberOfLogicalProcessors
+            $multithread--
+        }Else{
+            $multithread = 0
         }
-        
-        # Option "Kodieren"
-        if($modus -eq 1){
-            Write-Host "Arbeitsschritte: Umbenennen -> Kodieren" -ForegroundColor Yellow
-            if($herunterfahren -eq 1){
-                Write-Host "PC wird nach Beendigung heruntergefahren." -ForegroundColor Green
-            }Else{
-                Write-Host "PC wird nach Beendigung nicht heruntergefahren." -ForegroundColor Green
-            }
+        $Form.WindowState = 'Minimized'
+        $test = (Flo-Test $InPath $OutPath $userMethode)
+        if($test -eq $true){
+            Write-Host "Ab jetzt geht alles automatisch. Danke für die Geduld!" -ForegroundColor Cyan
             Write-Host " "
-            if($schonweitertestA -eq $false -and $schonweitertestB -eq $false  -and $schonweitertestC -eq $false){
+            $anfang_glob = Get-Date
+            Write-Host "Beginn um $(Get-Date -Format 'dd.MM.yy, HH:mm:ss')" -ForegroundColor Cyan
+            Write-Host " "
+            if($stayawake -eq 1){
+                Start-Process powershell -ArgumentList "$PSScriptRoot\preventsleep.ps1 -mode 1 -shutdown $userHerunterfahren" -WindowStyle Minimized
+            }
+            # Option "Kopieren, Kodieren"
+            if($modus -eq 0){
+                Write-Host "Arbeitsschritte: Kopieren -> Umbenennen -> Kodieren" -ForegroundColor Yellow
+                if($herunterfahren -eq 1){
+                    Write-Host "PC wird nach Beendigung heruntergefahren." -ForegroundColor Green
+                }Else{
+                    Write-Host "PC wird nach Beendigung nicht heruntergefahren." -ForegroundColor Green
+                }
+                Write-Host " "
+                Flo-Copy $InPath $userOutput
+                if($debug -eq 1){Pause}
                 Flo-Umbenenn $userOutput
                 if($debug -eq 1){Pause}
-            }Else{
-                Write-Host "Umbenennen scheins schon erfolgt." -ForegroundColor Yellow
-            }
-            if($schonweitertestB -eq $false -and $schonweitertestC -eq $false){
-                Flo-KodiererBurnin $c_platte $encoder $OutPath $multithread
+                if($schonweitertestB -eq $false -and $schonweitertestC -eq $false){
+                    Flo-KodiererBurnin $c_platte $encoder $OutPath $multithread
+                    if($debug -eq 1){Pause}
+                }Else{
+                    Write-Host "Burn-In bereits früher durchgeführt." -ForegroundColor Yellow
+                }
+                if($schonweitertestC -eq $false){
+                    Flo-KodiererConcat $c_platte $encoder $OutPath $multithread
+                    if($debug -eq 1){Pause}
+                }Else{
+                    Write-Host "Zusammenfügen der Dateien bereits früher durchgeführt." -ForegroundColor Yellow
+                }
+                Flo-KodiererQuad $encoder $OutPath $multithread $hardware
                 if($debug -eq 1){Pause}
-            }Else{
-                Write-Host "Burn-In bereits früher durchgeführt." -ForegroundColor Yellow
+                #Flo-Loesch $OutPath 0
             }
-            if($schonweitertestC -eq $false){
-                Flo-KodiererConcat $c_platte $encoder $OutPath $multithread
+            
+            # Option "Kodieren"
+            if($modus -eq 1){
+                Write-Host "Arbeitsschritte: Umbenennen -> Kodieren" -ForegroundColor Yellow
+                if($herunterfahren -eq 1){
+                    Write-Host "PC wird nach Beendigung heruntergefahren." -ForegroundColor Green
+                }Else{
+                    Write-Host "PC wird nach Beendigung nicht heruntergefahren." -ForegroundColor Green
+                }
+                Write-Host " "
+                if($schonweitertestA -eq $false -and $schonweitertestB -eq $false  -and $schonweitertestC -eq $false){
+                    Flo-Umbenenn $userOutput
+                    if($debug -eq 1){Pause}
+                }Else{
+                    Write-Host "Umbenennen scheins schon erfolgt." -ForegroundColor Yellow
+                }
+                if($schonweitertestB -eq $false -and $schonweitertestC -eq $false){
+                    Flo-KodiererBurnin $c_platte $encoder $OutPath $multithread
+                    if($debug -eq 1){Pause}
+                }Else{
+                    Write-Host "Burn-In bereits früher durchgeführt." -ForegroundColor Yellow
+                }
+                if($schonweitertestC -eq $false){
+                    Flo-KodiererConcat $c_platte $encoder $OutPath $multithread
+                    if($debug -eq 1){Pause}
+                }Else{
+                    Write-Host "Zusammenfügen der Dateien bereits früher durchgeführt." -ForegroundColor Yellow
+                }
+                Flo-KodiererQuad $encoder $OutPath $multithread $hardware
                 if($debug -eq 1){Pause}
-            }Else{
-                Write-Host "Zusammenfügen der Dateien bereits früher durchgeführt." -ForegroundColor Yellow
+                Flo-Loesch $OutPath 0
             }
-            Flo-KodiererQuad $encoder $OutPath $multithread $hardware
-            if($debug -eq 1){Pause}
-            Flo-Loesch $OutPath 0
-        }
 
-        # Option "Loeschen"
-        if($modus -eq 2){
-            Write-Host "Arbeitsschritte: Löschabfrage"
+            # Option "Loeschen"
+            if($modus -eq 2){
+                Write-Host "Arbeitsschritte: Löschabfrage"
+                Write-Host " "
+                Flo-Loesch $OutPath 1
+            }
+            $fertig_glob = Get-Date
+            $zeitdiff_glob = New-TimeSpan $anfang_glob $fertig_glob
+            Write-Host "PROGRAMM FERTIG." -ForegroundColor Green
+            Write-Host "End-Zeit: $(Get-Date)" -ForegroundColor Cyan
+            Write-Host "Dauer: $([System.Math]::Floor($zeitdiff_glob.TotalHours)) Stunden, $($zeitdiff_glob.Minutes) Min  $($zeitdiff_glob.Seconds) Sek." -ForegroundColor Cyan
+        }Else{
             Write-Host " "
-            Flo-Loesch $OutPath 1
+            Write-Host "Bitte Eingaben nochmal im Hauptfenster überprüfen." -ForegroundColor Red -BackgroundColor White
         }
-        $fertig_glob = Get-Date
-        $zeitdiff_glob = New-TimeSpan $anfang_glob $fertig_glob
-        Write-Host "PROGRAMM FERTIG." -ForegroundColor Green
-        Write-Host "End-Zeit: $(Get-Date)" -ForegroundColor Cyan
-        Write-Host "Dauer: $([System.Math]::Floor($zeitdiff_glob.TotalHours)) Stunden, $($zeitdiff_glob.Minutes) Min  $($zeitdiff_glob.Seconds) Sek." -ForegroundColor Cyan
-    }Else{
-        Write-Host " "
-        Write-Host "Bitte Eingaben nochmal im Hauptfenster überprüfen." -ForegroundColor Red -BackgroundColor White
-    }
-    Invoke-Close(0)
-    $Form.WindowState = 'Normal'
-})
+        Invoke-Close(0)
+        $Form.WindowState = 'Normal'
+    })
 
-$WPFbuttonSearchIn.Add_Click({
-    Get-Folder("in")
-})
+    $WPFbuttonSearchIn.Add_Click({Get-Folder("in")})
+    $WPFbuttonSearchOut.Add_Click({Get-Folder("out")})
+    $WPFbuttonProg.Add_Click({Start-Process powershell -ArgumentList "$($PSScriptRoot)\split_quadscreen.ps1"})
+    $WPFbuttonClose.Add_Click({Invoke-Close(1)})
 
-$WPFbuttonSearchOut.Add_Click({
-    Get-Folder("out")
-})
+    # Ausgabe von GUI starten:
+    $Form.ShowDialog() | out-null
+}else{
 
-$WPFbuttonProg.Add_Click({
-    Start-Process powershell -ArgumentList "$PSScriptRoot\flo_split_quadscreen.ps1"
-})
-
-$WPFbuttonClose.Add_Click({
-    Invoke-Close(1)
-})
-
-
-
-# Ausgabe von GUI starten:
-$Form.ShowDialog() | out-null
+}

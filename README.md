@@ -23,7 +23,7 @@ Look for files with other extensions than the specified (helps at cleaning up)
 Move MP3s after converting them with foobar, so they make sense again.
 
 ## kamera_gui
-Old version of `security-cam_gui`
+Old version of `security-cam_gui` - will get delted after `security-cam_gui` is validated.
 
 ## oldcodec_searchanddestroy
 Search for old codecs with FFprobe. If wanted, delete them.
