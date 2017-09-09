@@ -1,9 +1,27 @@
 ﻿#requires -version 3
+#requires -module PoshRSJob
 
+<#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .NOTES
+#>
 param(
-    [string]$encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
-    [string]$GUI_direct = "GUI"
+    [string]$Encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
+    [string]$GUI_direct = "GUI",
+    [string]$InPath = "",
+    [int]$FileType = 0,
+    [array]$TimeFrom = @("0","0","0"),
+    [array]$TimeTo = @("0","0","0"),
+    [array]$SelectCam = @("0","0","0","0"),
+    [int]$UseHardware = 0,
+    [int]$debug = 1
 )
+
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -53,18 +71,6 @@ Function Write-ColorOut(){
     if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $old_fg_color}
     if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
 }
-
-# Checking if PoshRSJob is installed:
-if (-not (Get-Module -ListAvailable -Name PoshRSJob)){
-    Write-ColorOut "Module RSJob (https://github.com/proxb/PoshRSJob) is required, but it seemingly isn't installed - please start PowerShell as administrator and run`t" -ForegroundColor Red
-    Write-ColorOut "Install-Module -Name PoshRSJob " -ForegroundColor DarkYellow
-    Write-ColorOut "or use the fork of media-copytool without RSJob." -ForegroundColor Red
-    Pause
-    Exit
-}
-
-# Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
 # If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
 [int]$getWPF = 0
@@ -147,45 +153,10 @@ Function Get-Folder(){
     }
 }
 
-#                     $encoder             $userCam         $userFileFull       $userFileName       $userFilePath       $userFrom         $userTo         $userfiletype     $userhardware
-Function Flo-Splitter($FloSplitterEncoder, $FloSplitterCam, $FloSplitterInFull, $FloSplitterInName, $FloSplitterInPath, $FloSplitterFrom, $FloSplitterTo, $FloSplitterMeth, $FloSplitterHardware){
-    $separator = "_"
-    $option = [System.StringSplitOptions]::RemoveEmptyEntries
-    $neuname = $FloSplitterInName.Split($separator,$option)
-    $arguments_A = " -i `"$FloSplitterInFull`" -ss $($FloSplitterFrom[0]):$($FloSplitterFrom[1]):$($FloSplitterFrom[2]).00 -to $($FloSplitterTo[0]):$($FloSplitterTo[1]):$($FloSplitterTo[2]).00 -hide_banner -an -map_metadata -1"
-    $encodeparam = " -c:v libx264 -preset veryslow -crf 18", " -c:v h264_qsv -preset veryslow -q 18 -look_ahead 0"
-    if($FloSplitterMeth -eq 0){
-        $splitparam = " -filter:v `"crop=in_w/2:in_h/2:0:0`"", " -filter:v `"crop=in_w/2:in_h/2:in_w/2:0`"", " -filter:v `"crop=in_w/2:in_h/2:0:in_h/2`"", " -filter:v `"crop=in_w/2:in_h/2:in_w/2:in_h/2`""
-        for($i=0; $i -lt 4; $i++){
-            if($FloSplitterCam[$i] -eq $true){
-                $neuname[1] = "cam$($i + 1)"
-                $arguments_Z = " `"$FloSplitterInPath\$($neuname[1])_$($neuname[0])_split_$($FloSplitterFrom[0])-$($FloSplitterFrom[1])-$($FloSplitterFrom[2])_$($FloSplitterTo[0])-$($FloSplitterTo[1])-$($FloSplitterTo[2]).mkv`"" 
-                if($FloSplitterHardware -eq 1){
-                    Start-Process -FilePath $FloSplitterEncoder -ArgumentList $arguments_A, $encodeparam[$FloSplitterHardware], $splitparam[$i], $arguments_z -Wait
-                    Start-Sleep -Milliseconds 100
-                    Write-Host "Cam $($i +1) kodiert." -ForegroundColor Yellow
-                }Else{
-                    Start-Process -FilePath $FloSplitterEncoder -ArgumentList $arguments_A, $encodeparam[$FloSplitterHardware], $splitparam[$i], $arguments_z
-                    Write-Host "Cam $($i +1) kodiert." -ForegroundColor Yellow
-                }
-            }
-        }
-    }Else{
-        $arguments_Z = " `"$FloSplitterInPath\$($FloSplitterInName)_split_$($FloSplitterFrom[0])-$($FloSplitterFrom[1])-$($FloSplitterFrom[2])_$($FloSplitterTo[0])-$($FloSplitterTo[1])-$($FloSplitterTo[2]).mkv`"" 
-        Start-Process -FilePath $FloSplitterEncoder -ArgumentList $arguments_A, $encodeparam[$FloSplitterHardware], $arguments_z
-        Write-Host "Cam kodiert." -ForegroundColor Yellow
-    }
-    while($prozesse -ne 0){
-        $prozesse = @(Get-Process -ErrorAction SilentlyContinue -Name ffmpeg).count
-        Start-Sleep -Milliseconds 250
-    }
-    Write-Host " "
-    Write-Host "Fertig!" -ForegroundColor Green
-    Write-Host " "
-}
-
+# DEFINITION: Start everything:
 Function Start-Everything(){
     Write-Host "Welcome to flolilo's quadscreen-splitter v1.5!`r`n" -ForegroundColor DarkCyan -BackgroundColor Gray
+
     Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
         while($true){
             $MyShell = New-Object -com "Wscript.Shell"
@@ -194,7 +165,57 @@ Function Start-Everything(){
         }
     } | Out-Null
 
-    Flo-Splitter $encoder $userCam $userFileFull $userFileName $userFilePath $userFrom $userTo $userfiletype $userhardware
+    # DEFINITION: testing paths:
+    if((Test-Path -Path $script:InPath -PathType Leaf) -eq $false){
+        Write-ColorOut "File $script:InPath not found!" -ForegroundColor Red
+        Invoke-Close
+    }
+    if((Test-Path -Path $script:Encoder -PathType Leaf) -eq $false){
+        Write-ColorOut "$script:Encoder not found!" -ForegroundColor Red
+        Invoke-Close
+    }
+
+    # DEFINITION: Getting file-properties:
+    $separator = "_"
+    $option = [System.StringSplitOptions]::RemoveEmptyEntries
+    [array]$InFile = @(Get-ChildItem -Path $script:InPath -File | ForEach-Object {
+        [PSCustomObject]@{
+            FullName = $_.FullName
+            BaseName = $_.BaseName
+            Directory = (Split-Path -Path $_.FullName -Parent)
+        }
+    })
+    $neuname = $InFile.BaseName.Split($separator,$option)
+
+    $arguments_A = " -i `"$InFile.FullName`" -ss $($script:TimeFrom[0]):$($script:TimeFrom[1]):$($script:TimeFrom[2]).00 -to $($script:TimeTo[0]):$($script:TimeTo[1]):$($script:TimeTo[2]).00 -hide_banner -an -map_metadata -1"
+    $encodeparam = " -c:v libx264 -preset veryslow -crf 18", " -c:v h264_qsv -preset veryslow -q 18 -look_ahead 0"
+    if($script:FileType -eq 0){
+        $splitparam = " -filter:v `"crop=in_w/2:in_h/2:0:0`"", " -filter:v `"crop=in_w/2:in_h/2:in_w/2:0`"", " -filter:v `"crop=in_w/2:in_h/2:0:in_h/2`"", " -filter:v `"crop=in_w/2:in_h/2:in_w/2:in_h/2`""
+        for($i=0; $i -lt 4; $i++){
+            if($script:SelectCam[$i] -eq $true){
+                $neuname[1] = "cam$($i + 1)"
+                $arguments_Z = " `"$InFile.Directory\$($neuname[1])_$($neuname[0])_split_$($script:TimeFrom[0])-$($script:TimeFrom[1])-$($script:TimeFrom[2])_$($script:TimeTo[0])-$($script:TimeTo[1])-$($script:TimeTo[2]).mkv`"" 
+                if($script:UseHardware -eq 1){
+                    Start-Process -FilePath $script:Encoder -ArgumentList $arguments_A, $encodeparam[$script:UseHardware], $splitparam[$i], $arguments_z -Wait
+                    Start-Sleep -Milliseconds 100
+                    Write-Host "Cam $($i +1) kodiert." -ForegroundColor Yellow
+                }Else{
+                    Start-Process -FilePath $script:Encoder -ArgumentList $arguments_A, $encodeparam[$script:UseHardware], $splitparam[$i], $arguments_z
+                    Write-Host "Cam $($i +1) kodiert." -ForegroundColor Yellow
+                }
+            }
+        }
+    }Else{
+        $arguments_Z = " `"$InFile.Directory\$($InFile.BaseName)_split_$($script:TimeFrom[0])-$($script:TimeFrom[1])-$($script:TimeFrom[2])_$($script:TimeTo[0])-$($script:TimeTo[1])-$($script:TimeTo[2]).mkv`"" 
+        Start-Process -FilePath $script:Encoder -ArgumentList $arguments_A, $encodeparam[$script:UseHardware], $arguments_z
+        Write-Host "Cam kodiert." -ForegroundColor Yellow
+    }
+    while($prozesse -ne 0){
+        $prozesse = @(Get-Process -ErrorAction SilentlyContinue -Name ffmpeg).count
+        Start-Sleep -Milliseconds 250
+    }
+    
+    Write-Host "`r`Done!`r`n" -ForegroundColor Green
 
     Get-RSJob | Stop-RSJob
     Start-Sleep -Milliseconds 25
@@ -237,41 +258,48 @@ if($GUI_direct -eq "GUI"){
         Exit
     }
 
+    # Read parameters and fill GUI-values:
+    $WPFtextBoxInput.Text = $InPath
+    $WPFtextBoxFromH.Text = $TimeFrom[0]
+    $WPFtextBoxFromM.Text = $TimeFrom[1]
+    $WPFtextBoxFromS.Text = $TimeFrom[2]
+    $WPFtextBoxToH.Text = $TimeTo[0]
+    $WPFtextBoxToM.Text = $TimeTo[1]
+    $WPFtextBoxToS.Text = $TimeTo[2]
+    $WPFcomboBoxDatei.SelectedIndex = $FileType
+    $WPFcheckBoxCamA.IsChecked = $SelectCam[0]
+    $WPFcheckBoxCamB.IsChecked = $SelectCam[1]
+    $WPFcheckBoxCamC.IsChecked = $SelectCam[2]
+    $WPFcheckBoxCamD.IsChecked = $SelectCam[3]
+    $WPFcheckBoxHardware.IsChecked = $UseHardware
+
+    # DEFINITION: Defining buttons:
     $WPFbuttonStart.Add_Click({
         $Form.WindowState = 'Minimized'
 
-        $userInput = Get-ChildItem -Path $WPFtextBoxInput.Text -File
-        $userFileFull = $userInput.FullName
-        $userFileName = $userInput.BaseName
-        $userFilePath = $userInput.Directory
-        $userFrom = @("0","0","0")
-        $userFrom[0] = $WPFtextBoxFromH.Text
-        $userFrom[1] = $WPFtextBoxFromM.Text
-        $userFrom[2] = $WPFtextBoxFromS.Text
-        $userTo = @("0","0","0")
-        $userTo[0] = $WPFtextBoxToH.Text
-        $userTo[1] = $WPFtextBoxToM.Text
-        $userTo[2] = $WPFtextBoxToS.Text
-        $userfiletype = $WPFcomboBoxDatei.SelectedIndex
-        $userCam = @("0","0","0","0")
-        $userCam[0] = $WPFcheckBoxCamA.IsChecked
-        $userCam[1] = $WPFcheckBoxCamB.IsChecked
-        $userCam[2] = $WPFcheckBoxCamC.IsChecked
-        $userCam[3] = $WPFcheckBoxCamD.IsChecked
-        $userhardware = $(if($WPFcheckBoxHardware.IsChecked -eq $true){1}Else{0})
+        # Write GUI-values to parameters:
+        $InPath = $WPFtextBoxInput.Text
+        $TimeFrom[0] = $WPFtextBoxFromH.Text
+        $TimeFrom[1] = $WPFtextBoxFromM.Text
+        $TimeFrom[2] = $WPFtextBoxFromS.Text
+        $TimeTo[0] = $WPFtextBoxToH.Text
+        $TimeTo[1] = $WPFtextBoxToM.Text
+        $TimeTo[2] = $WPFtextBoxToS.Text
+        $FileType = $WPFcomboBoxDatei.SelectedIndex
+        $SelectCam[0] = $WPFcheckBoxCamA.IsChecked
+        $SelectCam[1] = $WPFcheckBoxCamB.IsChecked
+        $SelectCam[2] = $WPFcheckBoxCamC.IsChecked
+        $SelectCam[3] = $WPFcheckBoxCamD.IsChecked
+        $UseHardware = $(if($WPFcheckBoxHardware.IsChecked -eq $true){1}Else{0})
 
         Start-Everything
 
         $Form.WindowState = 'Normal'
     })
-    
-    $WPFbuttonSearchIn.Add_Click({
-        Get-Folder
-    })
-    
-    $WPFbuttonClose.Add_Click({
-        Invoke-Close
-    })
+
+    $WPFbuttonSearchIn.Add_Click({Get-Folder})
+    $WPFbuttonClose.Add_Click({Invoke-Close})
+
     $Form.ShowDialog() | Out-Null
 }else{
     Start-Everything
