@@ -1,4 +1,5 @@
 #requires -version 3
+#requires -module PoshRSJob
 
 <#
     .SYNOPSIS
@@ -37,6 +38,9 @@ param(
     [string]$GUI_direct = "GUI",
     [int]$debug = 0
 )
+
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -86,18 +90,6 @@ Function Write-ColorOut(){
     if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $old_fg_color}
     if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
 }
-
-# Checking if PoshRSJob is installed:
-if (-not (Get-Module -ListAvailable -Name PoshRSJob)){
-    Write-ColorOut "Module RSJob (https://github.com/proxb/PoshRSJob) is required, but it seemingly isn't installed - please start PowerShell as administrator and run`t" -ForegroundColor Red
-    Write-ColorOut "Install-Module -Name PoshRSJob " -ForegroundColor DarkYellow
-    Write-ColorOut "or use the fork of media-copytool without RSJob." -ForegroundColor Red
-    Pause
-    Exit
-}
-
-# Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
 # If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
 [int]$getWPF = 0
