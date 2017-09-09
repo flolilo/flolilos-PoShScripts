@@ -18,6 +18,7 @@
         1 enables, 0 disables.
         If enabled, script will automatically remove all packages that I deemed useless (like games, Facebook,...)
         If disabled, you will be prompted for each app.
+        Will only work if script already run as administrator.
 #>
 param(
     [int]$deleteuselessonly = 0
