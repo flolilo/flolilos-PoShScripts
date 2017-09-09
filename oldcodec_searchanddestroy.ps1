@@ -1,16 +1,21 @@
-﻿# Flos Codec-Finder-Script v1.0
-param([string]$decoder = "C:\FFMPEG\binaries\ffprobe.exe",[string]$encoder = "C:\FFMPEG\binaries\ffmpeg.exe",[int]$runprobe = 1,[int]$deletion = 0,[int]$userinput = 0,[int]$debug = 0,[int]$writeout = 0)
+﻿#requires -version 3
+# flolilo's Codec-Finder-Script v1.0
+param(
+    [string]$decoder = "C:\FFMPEG\binaries\ffprobe.exe",
+    [string]$encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
+    [int]$runprobe = 1,
+    [int]$deletion = 0,
+    [int]$userinput = 0,
+    [int]$debug = 0,
+    [int]$writeout = 0
+)
 
 if($userinput -eq 1){
     [array]$userIn = @(Read-Host "Folder to be scanned")
     $deletion = Read-Host "Delete XML-files afterward? `"1`" for `"yes`", `"0`" for `"no`""
     $debug = Read-Host "Debug-Files?"
 }Else{
-    [array]$userIn = "Z:\filme"
-    $userIn += "Z:\filme_EN"
-    $userIn += "Z:\serien_DE"
-    $userIn += "Z:\serien_EN"
-    $userIn += "Z:\dokus"
+    [array]$userIn = "Z:\pathToVideos"
 }
 
 Clear-Host
