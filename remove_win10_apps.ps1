@@ -318,14 +318,18 @@ Function Set-Apps(){
 # DEFINITION: Removing apps:
 foreach($i in $AppArray){
     if($deleteuselessonly -eq 0){
-        if($i.Useless -eq 0){
-            Write-Host "Delete usefull $($i.ClearName)?`t" -ForegroundColor Magenta -NoNewline
-        }elseif($i.Useless -eq 1){
-            Write-Host "Delete useless $($i.ClearName)?`t" -ForegroundColor DarkGreen -NoNewline
-        }else{
-            Write-Host "Delete $($i.ClearName)? NOT RECOMMENDED, as it will make it impossible to (re)install apps!`t" -ForegroundColor Red -NoNewline
+        [int]$check = -1
+        while(($i.Useless -in (0..1) -and $check -notin (0..1)) -or ($i.Useless -eq -1 -and $check -notin @(0,2))){
+            if($i.Useless -eq 0){
+                Write-Host "Delete usefull $($i.ClearName)?`t1 = yes, 0 = no.`t" -ForegroundColor Magenta -NoNewline
+            }elseif($i.Useless -eq 1){
+                Write-Host "Delete useless $($i.ClearName)?`t1 = yes, 0 = no.`t" -ForegroundColor DarkGreen -NoNewline
+            }else{
+                Write-Host "Delete $($i.ClearName)? NOT RECOMMENDED, as it will make it impossible to (re)install apps!`t2 = yes, 0 = no.`t" -ForegroundColor Red -NoNewline
+            }
+            [int]$check = Read-Host
         }
-        if((Read-Host) -eq 1){
+        if(($check -eq 1 -and $i.Useless -in (0..1)) -or ($check -eq 2 -and $i.Useless -eq -1)){
             try{
                 Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage
                 Write-ColorOut "Removing $($i.ClearName) succeeded." -ForegroundColor DarkGreen
