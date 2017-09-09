@@ -159,7 +159,7 @@ while($changecounter -ne 0){
     $changecounter = 0
     [array]$folder = @()
     [int]$counter_A = 1
-    $folder = @(Get-ChildItem -LiteralPath $paraInput -Directory | Where-Object {$_.BaseName -ne $catalog_folder} | ForEach-Object {
+    $folder = @(Get-ChildItem -LiteralPath $paraInput -Directory | Where-Object {$_.BaseName -notmatch $catalog_folder} | ForEach-Object {
         if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $counter_A -eq 1){
             Write-Progress -Id 1 -Activity "Getting folders..." -Status "# $counter_A - $($_.BaseName)" -PercentComplete -1
             $sw_A.Reset()
@@ -170,9 +170,10 @@ while($changecounter -ne 0){
         [PSCustomObject]@{
             FullName = $_.FullName
             BaseName = $_.BaseName
-            filecount = @(Get-ChildItem -LiteralPath $_.FullName -File -Include $extensions).count
+            FileCount = @(Get-ChildItem -LiteralPath $_.FullName -File -Include $extensions).count
+
             [int]$counter_B = 0
-            subfolder = @(Get-ChildItem -LiteralPath $_.FullName -Directory -Recurse | ForEach-Object {
+            SubFolder = @(Get-ChildItem -LiteralPath $_.FullName -Directory -Recurse | ForEach-Object {
                 if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $counter_A -eq 1){
                     Write-Progress -Id 2 -Activity "    Getting subfolders..." -Status "    # $counter_B - $($_.BaseName)" -PercentComplete -1
                     $sw_A.Reset()
@@ -182,28 +183,27 @@ while($changecounter -ne 0){
                 [PSCustomObject]@{
                     FullName = $_.FullName
                     BaseName = $_.BaseName
-                    filecount = @(Get-ChildItem -LiteralPath $_.FullName -File -Include $extensions -Recurse).count
+                    FileCount = @(Get-ChildItem -LiteralPath $_.FullName -File -Include $extensions -Recurse).count
                 }
             })
         }
     })
+    Write-Progress -Id 1 -Activity "Getting folders..." -Status "Ready" -Completed
+    Write-Progress -Id 2 -Activity "    Getting subfolders..." -Status "    Ready" -Completed
 
-    $folder = $folder | Sort-Object -Property FullName,BaseName,filecount,subfolder
+    $folder = $folder | Sort-Object -Property FullName,SubFolder.FullName
     $folder | Out-Null
-    for($i=0;$i -lt $folder.Length; $i++){
-        $folder[$i].subfolder = $folder[$i].subfolder | Sort-Object -Property FullName,BaseName,filecount
-        $folder | Out-Null
-    }
-    
-    Clear-Host
+
+    Write-ColorOut "Folder structure:" -ForegroundColor Cyan
     for($i=0; $i -lt $folder.Length; $i++){
-        Write-ColorOut $folder[$i].BaseName
+        Write-ColorOut "$($folder[$i].BaseName) - $($folder[$i].filecount)"
         for($j=0; $j -lt $folder[$i].subfolder.Length; $j++){
             Write-ColorOut "|---- $($folder[$i].subfolder[$j].BaseName) - $($folder[$i].subfolder[$j].filecount)" -ForegroundColor DarkGray
         }
     }
     Start-Sleep -Seconds 5
 
+    Write-ColorOut "Now looking for folders to delete..." -ForegroundColor Cyan
     for($i=0; $i -lt $folder.Length; $i++){
         if($folder[$i].subfolder.Length -ne 0){
             for($j=0; $j -lt $folder[$i].subfolder.Length; $j++){
@@ -221,6 +221,8 @@ while($changecounter -ne 0){
                         }
                         $changecounter++
                     }
+                }else{
+                    Write-ColorOut "$($folder[$i].subfolder[$j].FullName.Replace($paraInput,"."))`t`thas $($folder[$i].subfolder[$j].filecount) files." -ForegroundColor DarkGreen
                 }
             }
         }else{
@@ -238,6 +240,8 @@ while($changecounter -ne 0){
                     }
                     $changecounter++
                 }
+            }else{
+                Write-ColorOut "$($folder[$i].FullName.Replace($paraInput,"."))`t`thas $($folder[$i].subfolder[$j].filecount) files." -ForegroundColor DarkGreen
             }
         }
     }
