@@ -157,6 +157,7 @@ Function Get-Folder(){
 Function Start-Everything(){
     Write-Host "Welcome to flolilo's quadscreen-splitter v1.5!`r`n" -ForegroundColor DarkCyan -BackgroundColor Gray
 
+    # DEFINITION: Preventing standby:
     Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
         while($true){
             $MyShell = New-Object -com "Wscript.Shell"
@@ -168,10 +169,12 @@ Function Start-Everything(){
     # DEFINITION: testing paths:
     if((Test-Path -Path $script:InPath -PathType Leaf) -eq $false){
         Write-ColorOut "File $script:InPath not found!" -ForegroundColor Red
+        Start-Sound(0)
         Invoke-Close
     }
     if((Test-Path -Path $script:Encoder -PathType Leaf) -eq $false){
-        Write-ColorOut "$script:Encoder not found!" -ForegroundColor Red
+        Write-ColorOut "Encoder $script:Encoder not found!" -ForegroundColor Red
+        Start-Sound(0)
         Invoke-Close
     }
 
@@ -214,12 +217,14 @@ Function Start-Everything(){
         $prozesse = @(Get-Process -ErrorAction SilentlyContinue -Name ffmpeg).count
         Start-Sleep -Milliseconds 250
     }
-    
-    Write-Host "`r`Done!`r`n" -ForegroundColor Green
 
+    # DEFINITION: Un-preventing standby:
     Get-RSJob | Stop-RSJob
     Start-Sleep -Milliseconds 25
     Get-RSJob | Remove-RSJob
+
+    Write-Host "`r`Done!`r`n" -ForegroundColor Green
+    Start-Sound(1)
 }
 
 
