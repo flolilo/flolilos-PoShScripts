@@ -61,7 +61,7 @@ param(
         "*.tif",
         "*.tiff"
     ),
-    [int]$debug = 0
+    [int]$debug = 1
 )
 
 $confirm = $(if($debug -eq 1){1}else{0})
