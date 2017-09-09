@@ -33,7 +33,6 @@
     .EXAMPLE
         exit_remover -add_copyright 1 -artist_name "John Doe" -copyright_text "2017, by John Doe. -encoder "C:\exiftool.exe"
 #>
-
 param(
     [int]$add_copyright = 0,
     [string]$artist_name = "",
@@ -49,8 +48,16 @@ if($add_copyright -eq 1 -and ($artist_name.Length -eq 0 -or $copyright_text.Leng
         $artist_name = $temp.artist_name
         $copyright_text = $temp.copyright_text
     }else{
-        try{[string]$artist_name = Read-Host "Enter artist name here"}catch{continue}
-        try{[string]$copyright_text = Read-Host "Enter copyright text here"}catch{continue}
+        try{
+            [string]$artist_name = Read-Host "Enter artist name here"
+        }catch{
+            continue
+        }
+        try{
+            [string]$copyright_text = Read-Host "Enter copyright text here"
+        }catch{
+            continue
+        }
     }
 }
 
@@ -150,17 +157,36 @@ if((Test-Path -LiteralPath $encoder -PathType Leaf) -eq $false){
     }
 }
 
+$sw = [diagnostics.stopwatch]::StartNew()
+
 if((Test-Path -LiteralPath $path -PathType Container) -eq $true){
     [array]$files = @()
-    $files = Get-ChildItem -LiteralPath $path -Filter *.jpg
+    [int]$counter = 1
+    $files = @(Get-ChildItem -LiteralPath $path -Include *.jpg,*.jpeg | ForEach-Object {
+        if($sw.Elapsed.TotalMilliseconds -ge 500 -or $counter -eq 1){
+            Write-Progress -Activity "Searching JP(E)Gs..." -Status "$($counter) - $($_.BaseName)" -PercentComplete -1
+            $sw.Reset()
+            $sw.Start()
+        }
+        $counter++
+        [PSCustomObject]@{
+            FullName = $_.FullName
+            BaseName = $_.BaseName
+        }
+    })
 }else{
     Write-ColorOut "Path not found - aborting!" -ForegroundColor Red
     Start-Sound(0)
     Exit
 }
 
-Write-ColorOut "Deleting EXIFs..." -ForegroundColor Yellow
 for($i=0; $i -lt $files.Length; $i++){
+    if($sw.Elapsed.TotalMilliseconds -ge 500 -or $o -eq 0){
+        Write-Progress -Activity "Deleting EXIFs..." -Status "$($i + 1)/$($files.Length) - $($files[$i].BaseName)" -PercentComplete ((($i + 1) / $files.Length) * 100)
+        $sw.Reset()
+        $sw.Start()
+    }
+
     while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -ge 8){
         Start-Sleep -Milliseconds 25
     }
@@ -173,8 +199,13 @@ while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -gt 0){
 Start-Sleep -Milliseconds 250
 
 if($add_copyright -eq 1){
-    Write-ColorOut "Adding Copyright..." -ForegroundColor Yellow
     for($i=0; $i -lt $files.Length; $i++){
+        if($sw.Elapsed.TotalMilliseconds -ge 500 -or $i -eq 0){
+            Write-Progress -Activity "Adding Copyright..." -Status "$($i + 1)/$($files.Length) - $($files[$i].BaseName)" -PercentComplete ((($i + 1) / $files.Length) * 100)
+            $sw.Reset()
+            $sw.Start()
+        }
+
         while((Get-Process -ErrorAction SilentlyContinue -Name "exiftool").count -ge 8){
             Start-Sleep -Milliseconds 25
         }
