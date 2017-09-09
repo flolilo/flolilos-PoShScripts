@@ -517,6 +517,73 @@ Function Start-Everything(){
     }
 }
 
+# ==================================================================================================
+# ==============================================================================
+# Programming GUI & starting everything:
+# ==============================================================================
+# ==================================================================================================
+
+# GUI-Code (XAML)
+$inputXML = @"
+<Window x:Class="FlosFFmpegSkripte.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Flos Ü-Kamera-Prog v3.0" Height="323" Width="735" ResizeMode="CanMinimize">
+    <Grid Background="#FFB3B6B5">
+        <TextBlock x:Name="textBlockWelcome" HorizontalAlignment="Left" Margin="112,20,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="32" Width="520" FontSize="18" TextAlignment="Center" Text="Willkommen bei Flos Überwachungskamera-Programm v3.0!"/>
+        <TextBlock x:Name="textBlockInput" HorizontalAlignment="Left" Margin="13,72,0,0" TextWrapping="Wrap" Text="Pfad SD-Karte:" VerticalAlignment="Top" Height="18" Width="80"/>
+        <TextBlock x:Name="textBlockOutput" HorizontalAlignment="Left" Margin="25,115,0,0" TextWrapping="Wrap" Text="Pfad am PC:" VerticalAlignment="Top" Height="18"/>
+        <TextBlock x:Name="textBlockMethode" HorizontalAlignment="Left" Margin="185,159,0,0" TextWrapping="Wrap" Text="Was soll getan werden?" VerticalAlignment="Top" Height="22"/>
+        <Button x:Name="buttonStart" Content="START" HorizontalAlignment="Center" Margin="285,259,332,0" VerticalAlignment="Top" Width="110" HorizontalContentAlignment="Center" ToolTip="Tipp: Verzeichnisse vor Beginn überprüfen!"/>
+        <Button x:Name="buttonClose" Content="Ende" HorizontalAlignment="Left" Margin="619,259,0,0" VerticalAlignment="Top" Width="60" ToolTip="Ciao!"/>
+        <Button x:Name="buttonSearchIn" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,70,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
+        <Button x:Name="buttonSearchOut" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,113,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
+        <Button x:Name="buttonProg" Content="Datei-Splitter" HorizontalAlignment="Left" Margin="50,259,0,0" VerticalAlignment="Top" Width="105" ToolTip="Zum Herausrechnen wichtiger Stellen."/>
+        <TextBox x:Name="textBoxInput" HorizontalAlignment="Left" Height="23" Margin="103,71,0,0" Text="sd-karten_inhalt\Movies" VerticalAlignment="Top" Width="500" ToolTip="SD-Karten-Verzeichnis. Nur nötig, falls auch kopiert wird." VerticalScrollBarVisibility="Disabled"/>
+        <TextBox x:Name="textBoxOutput" HorizontalAlignment="Left" Height="23" Margin="103,113,0,0" Text="X:\_NEUE_DATEIEN" VerticalAlignment="Top" Width="500" ToolTip="Ziel-Verzeichnis." VerticalScrollBarVisibility="Disabled"/>
+        <CheckBox x:Name="checkBoxHardware" Content="Hardware-Codierung" HorizontalAlignment="Left" Margin="200,192,0,0" VerticalAlignment="Top" ToolTip="Wenn aktiviert: geht schneller, kann aber Fehler erzeugen. Empfehlung: Bei Monika AN, bei Franz AUS." IsChecked="True" Width="153" Padding="4,-1,0,0"/>
+        <CheckBox x:Name="checkBoxShutdown" Content="Nach Beendigung herunterfahren (keine Funktion bei &quot;Zwischendateien löschen&quot;)" HorizontalAlignment="Left" Margin="200,211,0,0" VerticalAlignment="Top" ToolTip="Wenn alles fertig ist, fährt Computer herutner. Vorteilhaft, wenn Programm über Nacht läuft." Width="459" Padding="4,-1,0,0"/>
+        <CheckBox x:Name="checkBoxMultithread" Content="Multithreading" HorizontalAlignment="Left" Margin="200,231,0,0" VerticalAlignment="Top" Padding="4,-1,0,0" IsChecked="True" ToolTip="Rechnet effizienter, PC ist aber daneben kaum noch nutzbar. Gut, wenn über Nacht gerechnet wird."/>
+        <ComboBox x:Name="comboBoxMeth" HorizontalAlignment="Left" Margin="318,156,0,0" VerticalAlignment="Top" Width="186" IsReadOnly="True" SelectedIndex="0" ToolTip="Empfehlung: Standard-Auswahl.">
+            <ComboBoxItem Content="Kopieren &amp; Kodieren"/>
+            <ComboBoxItem Content="Kodieren"/>
+            <ComboBoxItem Content="Zwischendateien löschen"/>
+        </ComboBox>
+    </Grid>
+</Window>
+"@
+ 
+[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
+[xml]$xaml = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
+$reader=(New-Object System.Xml.XmlNodeReader $xaml)
+try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
+catch{
+    Write-Host "Unable to load Windows.Markup.XamlReader. Usually this means that you haven't installed .NET Framework. Please download and install the latest .NET Framework Web-Installer for your OS: " -NoNewline -ForegroundColor Red
+    Write-Host "https://www.google.com/webhp?q=net+framework+web+installer"
+    Write-Host "Alternatively, start this script with '-GUI_CLI_Direct `"CLI`"' (w/o single-quotes) to run it via CLI (find other parameters via '-Help 2' or via README-File ('-Help 1')." -ForegroundColor Yellow
+    Pause
+    Exit
+}
+$xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
+
+if($getWPF -ne 0){
+    Write-Host "Found the following interactable elements:`r`n" -ForegroundColor Cyan
+    Get-Variable WPF*
+    Pause
+    Exit
+}
+
+# Defining GUI-Values:
+$WPFtextBoxInput.Text = $sd_karte
+$WPFtextBoxOutput.Text = $ausgabe
+$WPFcomboBoxMeth.SelectedIndex = $modus
+$WPFcheckBoxHardware.IsChecked = $hardware
+$WPFcheckBoxShutdown.IsChecked = $herunterfahren
+$WPFcheckBoxMultithread.IsChecked = $multithread
+
 #===========================================================================
 #===========================================================================
 # Programming the buttons:
@@ -653,72 +720,6 @@ $WPFbuttonClose.Add_Click({
 })
 
 
-# ==================================================================================================
-# ==============================================================================
-# Programming GUI & starting everything:
-# ==============================================================================
-# ==================================================================================================
-
-# GUI-Code (XAML)
-$inputXML = @"
-<Window x:Class="FlosFFmpegSkripte.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="Flos Ü-Kamera-Prog v3.0" Height="323" Width="735" ResizeMode="CanMinimize">
-    <Grid Background="#FFB3B6B5">
-        <TextBlock x:Name="textBlockWelcome" HorizontalAlignment="Left" Margin="112,20,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="32" Width="520" FontSize="18" TextAlignment="Center" Text="Willkommen bei Flos Überwachungskamera-Programm v3.0!"/>
-        <TextBlock x:Name="textBlockInput" HorizontalAlignment="Left" Margin="13,72,0,0" TextWrapping="Wrap" Text="Pfad SD-Karte:" VerticalAlignment="Top" Height="18" Width="80"/>
-        <TextBlock x:Name="textBlockOutput" HorizontalAlignment="Left" Margin="25,115,0,0" TextWrapping="Wrap" Text="Pfad am PC:" VerticalAlignment="Top" Height="18"/>
-        <TextBlock x:Name="textBlockMethode" HorizontalAlignment="Left" Margin="185,159,0,0" TextWrapping="Wrap" Text="Was soll getan werden?" VerticalAlignment="Top" Height="22"/>
-        <Button x:Name="buttonStart" Content="START" HorizontalAlignment="Center" Margin="285,259,332,0" VerticalAlignment="Top" Width="110" HorizontalContentAlignment="Center" ToolTip="Tipp: Verzeichnisse vor Beginn überprüfen!"/>
-        <Button x:Name="buttonClose" Content="Ende" HorizontalAlignment="Left" Margin="619,259,0,0" VerticalAlignment="Top" Width="60" ToolTip="Ciao!"/>
-        <Button x:Name="buttonSearchIn" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,70,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonSearchOut" Content="Durchsuchen..." HorizontalAlignment="Left" Margin="619,113,0,0" VerticalAlignment="Top" Width="90" Height="24"/>
-        <Button x:Name="buttonProg" Content="Datei-Splitter" HorizontalAlignment="Left" Margin="50,259,0,0" VerticalAlignment="Top" Width="105" ToolTip="Zum Herausrechnen wichtiger Stellen."/>
-        <TextBox x:Name="textBoxInput" HorizontalAlignment="Left" Height="23" Margin="103,71,0,0" Text="sd-karten_inhalt\Movies" VerticalAlignment="Top" Width="500" ToolTip="SD-Karten-Verzeichnis. Nur nötig, falls auch kopiert wird." VerticalScrollBarVisibility="Disabled"/>
-        <TextBox x:Name="textBoxOutput" HorizontalAlignment="Left" Height="23" Margin="103,113,0,0" Text="X:\_NEUE_DATEIEN" VerticalAlignment="Top" Width="500" ToolTip="Ziel-Verzeichnis." VerticalScrollBarVisibility="Disabled"/>
-        <CheckBox x:Name="checkBoxHardware" Content="Hardware-Codierung" HorizontalAlignment="Left" Margin="200,192,0,0" VerticalAlignment="Top" ToolTip="Wenn aktiviert: geht schneller, kann aber Fehler erzeugen. Empfehlung: Bei Monika AN, bei Franz AUS." IsChecked="True" Width="153" Padding="4,-1,0,0"/>
-        <CheckBox x:Name="checkBoxShutdown" Content="Nach Beendigung herunterfahren (keine Funktion bei &quot;Zwischendateien löschen&quot;)" HorizontalAlignment="Left" Margin="200,211,0,0" VerticalAlignment="Top" ToolTip="Wenn alles fertig ist, fährt Computer herutner. Vorteilhaft, wenn Programm über Nacht läuft." Width="459" Padding="4,-1,0,0"/>
-        <CheckBox x:Name="checkBoxMultithread" Content="Multithreading" HorizontalAlignment="Left" Margin="200,231,0,0" VerticalAlignment="Top" Padding="4,-1,0,0" IsChecked="True" ToolTip="Rechnet effizienter, PC ist aber daneben kaum noch nutzbar. Gut, wenn über Nacht gerechnet wird."/>
-        <ComboBox x:Name="comboBoxMeth" HorizontalAlignment="Left" Margin="318,156,0,0" VerticalAlignment="Top" Width="186" IsReadOnly="True" SelectedIndex="0" ToolTip="Empfehlung: Standard-Auswahl.">
-            <ComboBoxItem Content="Kopieren &amp; Kodieren"/>
-            <ComboBoxItem Content="Kodieren"/>
-            <ComboBoxItem Content="Zwischendateien löschen"/>
-        </ComboBox>
-    </Grid>
-</Window>
-"@
- 
-[void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
-[xml]$xaml = $inputXML -replace 'mc:Ignorable="d"','' -replace "x:Name",'Name'  -replace '^<Win.*', '<Window'
-$reader=(New-Object System.Xml.XmlNodeReader $xaml)
-try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
-catch{
-    Write-Host "Unable to load Windows.Markup.XamlReader. Usually this means that you haven't installed .NET Framework. Please download and install the latest .NET Framework Web-Installer for your OS: " -NoNewline -ForegroundColor Red
-    Write-Host "https://www.google.com/webhp?q=net+framework+web+installer"
-    Write-Host "Alternatively, start this script with '-GUI_CLI_Direct `"CLI`"' (w/o single-quotes) to run it via CLI (find other parameters via '-Help 2' or via README-File ('-Help 1')." -ForegroundColor Yellow
-    Pause
-    Exit
-}
-$xaml.SelectNodes("//*[@Name]") | ForEach-Object {Set-Variable -Name "WPF$($_.Name)" -Value $Form.FindName($_.Name)}
-
-if($getWPF -ne 0){
-    Write-Host "Found the following interactable elements:`r`n" -ForegroundColor Cyan
-    Get-Variable WPF*
-    Pause
-    Exit
-}
-
-# Defining GUI-Values:
-$WPFtextBoxInput.Text = $sd_karte
-$WPFtextBoxOutput.Text = $ausgabe
-$WPFcomboBoxMeth.SelectedIndex = $modus
-$WPFcheckBoxHardware.IsChecked = $hardware
-$WPFcheckBoxShutdown.IsChecked = $herunterfahren
-$WPFcheckBoxMultithread.IsChecked = $multithread
 
 # Ausgabe von GUI starten:
 $Form.ShowDialog() | out-null
