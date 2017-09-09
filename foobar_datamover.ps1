@@ -132,8 +132,8 @@ if((Test-Path -Path $paraInput -PathType Container) -eq $false){
 Function Start-Replacing(){
     param(
         [string]$userIn
-    
-        )
+    )
+
     $userIn = $userIn.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")")
 
     return $userIn
