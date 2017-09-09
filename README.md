@@ -1,50 +1,50 @@
 # flolilos-PoShScripts
-All my often used PowerShell-scripts:
+**All my often used PowerShell-scripts:**
 
-### _fortryingoutloud
+## _fortryingoutloud
 Just a few (old) tests I like to keep around.
 
-### catalog_backup
+## catalog_backup
 For backing up picture catalogs.
 
-### compare_via_ffmpeg
+## compare_via_ffmpeg
 Easy-to-use tool to create difference videos via FFmpeg.
 
-### cpuwatch
+## cpuwatch
 Document the computer's CPU- and RAM-stats (into a CSV-file).
 
-### exif_remover
+## exif_remover
 Remove EXIF-entries in pictures (and re-add copyright information) via exiftool.
 
-### find_extensions
+## find_extensions
 Look for files with other extensions than the specified (helps at cleaning up)
 
-### foobar_datamover
+## foobar_datamover
 Move MP3s after converting them with foobar, so they make sense again.
 
-### kamera_gui
+## kamera_gui
 Old version of `security-cam_gui`
 
-### oldcodec_searchanddestroy
+## oldcodec_searchanddestroy
 Search for old codecs with FFprobe. If wanted, delete them.
 
-### oldcodec_transcode
+## oldcodec_transcode
 Transcode files in batch with FFmpeg.
 
-### outlook_+_google
+## outlook_+_google
 Start Outlook and OutlookGoogleCalendarSync.
 
-### pictures_cleanup
+## pictures_cleanup
 Clean up (sub)folders with unneeded files.
 
-### powershell_doubleclick-behavior
+## powershell_doubleclick-behavior
 Change behavior of a double-click on `.ps1`-files in Windows Explorer
 
-### preventsleep
+## preventsleep
 Prevent the computer from going to standby - options for forever, certain CPU threshold, running processes.
 
-### security-cam_gui
+## security-cam_gui
 Re-encode file from the SD-card of the main station of security cams (with FFmpeg.)
 
-### split-quadscreen
+## split-quadscreen
 Split a (quadscreen-)video into parts with FFmpeg.
