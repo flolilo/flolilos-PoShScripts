@@ -86,6 +86,7 @@ Function Write-ColorOut(){
 }
 
 
+# DEFINITION: Create an array with all apps:
 Function Set-Apps(){
     [array]$Apps = (0..100) | ForEach-Object {
         [PSCustomObject]@{
@@ -301,15 +302,20 @@ Function Set-Apps(){
         $Apps[$i].AppName = $AppName[$i]
         $Apps[$i].Useless = $Useless[$i]
     }
+
+    $Apps = $Apps | Sort-Object -Property ClearName,AppName -Unique
+    $Apps | Out-Null
     return ($Apps | Where-Object {$_.ClearName -ne "XYZ" -and $_.AppName -ne "XYZ"})
 }
 
 [array]$AppArray = Set-Apps
-$AppArray = $AppArray | Sort-Object -Property ClearName,AppName -Unique
-$AppArray | Out-Null
 
-# $AppArray | Format-Table -AutoSize
+<# DEFINITION: just for debug purposes:
+    $AppArray | Format-Table -AutoSize
+    Pause
+#>
 
+# DEFINITION: Removing apps:
 foreach($i in $AppArray){
     if($deleteuselessonly -eq 0){
         if($i.Useless -eq 0){
@@ -341,4 +347,5 @@ foreach($i in $AppArray){
     }
 }
 
+Write-ColorOut "Done!" -ForegroundColor Green
 Pause
