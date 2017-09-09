@@ -1,8 +1,11 @@
 ﻿#requires -version 3
-# flolilo's Codec-Finder-Script v1.0
+
+<#
+    .SYNOPSIS
+        flolilo's Codec-Finder-Script v1.0
+#>
 param(
     [string]$decoder = "C:\FFMPEG\binaries\ffprobe.exe",
-    [string]$encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
     [int]$runprobe = 1,
     [int]$deletion = 0,
     [int]$userinput = 0,
@@ -15,7 +18,8 @@ if($userinput -eq 1){
     $deletion = Read-Host "Delete XML-files afterward? `"1`" for `"yes`", `"0`" for `"no`""
     $debug = Read-Host "Debug-Files?"
 }Else{
-    [array]$userIn = "Z:\pathToVideos"
+    [array]$userIn = "Z:\Videos1"
+    $userIn += "Z:\Videos2"
 }
 
 Clear-Host
@@ -95,7 +99,6 @@ for($i=0; $i -lt $dateinamen.Length; $i++){
     # if($bla_aud -like "DTS*" -or $bla_vid -like "mpeg1*" -or $bla_vid -like "mpeg2*" -or $bla_aud -like "mp2*" -or $bla_aud -like "truehd*"  -or $bla_aud -like "wmav2*" -or $($dateinamen[$i]) -like "*_OPUS*"){
     if($bla_aud -like "DTS*" -or $bla_vid -like "mpeg1*" -or $bla_vid -like "mpeg2*" -or $bla_aud -like "mp2*" -or $bla_aud -like "truehd*"  -or $bla_aud -like "wmav2*"){
         if($writeout -eq 1){
-            # Write-Host "File with old codecs." -ForegroundColor Red
             Write-Host "$($dateipfade[$i])\$($dateinamen[$i])" -ForegroundColor Red
             Remove-Item -Path "$($dateipfade[$i])\$($dateinamen[$i])" -Confirm
         }
@@ -133,8 +136,7 @@ if($deletion -eq 1){
     }
 }
 
-Write-Host " "
-Write-Host "Dateien:" -ForegroundColor Green
+Write-Host "`r`nDateien:" -ForegroundColor Green
 
 # Read out gathered data:
 $separator = "§"
@@ -172,7 +174,7 @@ for($i=0; $i -lt $trans_file.Length; $i++){
     Out-File -FilePath $PSScriptRoot\altcodecs_files.txt -InputObject " " -Encoding utf8 -Append
     Write-Host "$($trans_rei_sp.length) streams: $($trans_vid_sp.length) video, $($trans_aud_sp.length) audio, $($trans_sub_sp.length) sub."
 }
-Write-Host " "
-Write-Host "DONE." -ForegroundColor Green
+
+Write-Host "`r`nDONE." -ForegroundColor Green
 Set-Location $PSScriptRoot
 Pause
