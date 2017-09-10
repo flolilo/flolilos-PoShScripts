@@ -190,6 +190,10 @@ Function Set-Apps(){
     $AppName += "*MinecraftUWP*"
     $Useless += 1
 
+    $ClearName += "Mixed Reality Portal"
+    $AppName += "*HolographicFirstRun*"
+    $Useless += 1
+
     $ClearName += "Money"
     $AppName += "*bingfinance*"
     $Useless += 1
