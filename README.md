@@ -43,8 +43,11 @@ Change behavior of a double-click on `.ps1`-files in Windows Explorer
 ## preventsleep
 Prevent the computer from going to standby - options for forever, certain CPU threshold, running processes.
 
+## remove_registry_entries
+Remove some unnecessary context menu entries. **Could quite possibly damage your system, so be careful!**
+
 ## remove_win10_apps
-Ask user which unnecessary apps to uninstall.
+Ask user which unnecessary apps to uninstall. **Could quite possibly damage your system, so be careful!**
 
 ## security-cam_gui
 Re-encode file from the SD-card of the main station of security cams (with FFmpeg.)

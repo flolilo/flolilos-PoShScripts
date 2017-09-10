@@ -14,26 +14,22 @@
         applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
         on the WWW). However, some parts are copies or modifications of very genuine code - see
         the "CREDIT"-tags to find them.
-    .PARAMETER deleteuselessonly
-        1 enables, 0 disables.
-        If enabled, script will automatically remove all packages that I deemed useless (like games, Facebook,...)
-        If disabled, you will be prompted for each app.
-        Will only work if script already run as administrator.
 #>
-param(
-    [int]$deleteuselessonly = 0
-)
+
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # Suppressing Remove-AppxPackage's Write-Progress:
 $ProgressPreference = 'SilentlyContinue'
-# Starting the script as admin:
+
+# Starting the script as admin and getting values:
 if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) -eq $false){
     Write-Host "This script will ask for admin-rights. It changes the standard-behavior when doubleclicking a *.ps1-file." -ForegroundColor Cyan
     Write-Host "Dieses Skript wird um Administrator-Rechte fragen. Es aendert das Verhalten bei Doppelklicks auf *.ps1-Dateien." -ForegroundColor Yellow
     Start-Sleep -Seconds 2
     Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     Exit
+}else{
+    [int]$deleteuselessonly = $(if((Read-Host "Delete useless apps only?") -eq 1){1}else{0})
 }
 
 # DEFINITION: Making Write-Host much, much faster:
