@@ -122,10 +122,6 @@ Function Set-Apps(){
     $AppName += "*WindowsCalculator*"
     $Useless += 0
 
-    $ClearName += "Calendar and Mail"
-    $AppName += "*windowscommunicationsapps*"
-    $Useless += 0
-
     $ClearName += "Camera"
     $AppName += "*WindowsCamera*"
     $Useless += 0
@@ -142,7 +138,7 @@ Function Set-Apps(){
     $AppName += "*Facebook*"
     $Useless += 1
 
-    $ClearName += "Farmville 2:Country Escape"
+    $ClearName += "Farmville 2: Country Escape"
     $AppName += "*FarmVille2CountryEscape*"
     $Useless += 1
 
@@ -158,7 +154,7 @@ Function Set-Apps(){
     $AppName += "*Microsoft.SkypeApp*"
     $Useless += 1
 
-    $ClearName += "Get Started or Tips (build 1703)"
+    $ClearName += "Get Started / Tips (build 1703)"
     $AppName += "*Getstarted*"
     $Useless += 1
 
@@ -166,7 +162,7 @@ Function Set-Apps(){
     $AppName += "*ZuneMusic*"
     $Useless += 0
 
-    $ClearName += "Mail and Calendar"
+    $ClearName += "Mail and Calendar (Windows communication apps)"
     $AppName += "*windowscommunicationsapps*"
     $Useless += 0
 
@@ -260,15 +256,11 @@ Function Set-Apps(){
 
     $ClearName += "Store app"
     $AppName += "*WindowsStore*"
-    # NOT RECOMMENDED, therefore -1 (super un-useless!)
+    # NOT RECOMMENDED, therefore -1 ( = super un-useless!)
     $Useless += -1
 
     $ClearName += "Sway"
     $AppName += "*Office.Sway*"
-    $Useless += 1
-
-    $ClearName += "Tips (build 1703) or Get Started"
-    $AppName += "*Getstarted*"
     $Useless += 1
 
     $ClearName += "Twitter"
