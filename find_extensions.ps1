@@ -36,7 +36,6 @@ param(
 )
 
 for($i=0; $i -lt $userIn.Length; $i++){
-    Set-Location $($userIn[$i])
     Write-Host "Looking for files in $($userIn[$i])..." -ForegroundColor Yellow
     Get-Childitem -LiteralPath "$($userIn[$i])" -Recurse -Exclude $ignore_filetypes -File | Group-Object Extension -NoElement | Sort-Object count -desc
 }
