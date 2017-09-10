@@ -323,7 +323,7 @@ foreach($i in $AppArray){
         [int]$check = -1
         while(($i.Useless -in (0..1) -and $check -notin (0..1)) -or ($i.Useless -eq -1 -and $check -notin @(0,2))){
             if($i.Useless -eq 0){
-                Write-Host "Delete usefull $($i.ClearName)?`t1 = yes, 0 = no.`t" -ForegroundColor Magenta -NoNewline
+                Write-Host "Delete (potentially) usefull $($i.ClearName)?`t1 = yes, 0 = no.`t" -ForegroundColor Magenta -NoNewline
             }elseif($i.Useless -eq 1){
                 Write-Host "Delete useless $($i.ClearName)?`t1 = yes, 0 = no.`t" -ForegroundColor DarkGreen -NoNewline
             }else{
