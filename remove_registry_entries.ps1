@@ -29,6 +29,10 @@ if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
 }else{
     [switch]$wantverbose = $(if((Read-Host "Want some verbose? (To see what's happening)`t") -eq 1){$true}else{$false})
     [switch]$wantwhatif = $(if((Read-Host "Activate dry-running? (Only show what would happen, not actually doing anything)`t") -eq 1){$true}else{$false})
+    Write-Host "`r`nThis script will change values in your system's Registry, so perhaps it would be a good moment to export (save) your Registry NOW.`r`n" -ForegroundColor Magenta
+    Write-Host "To do this, press <Win>+<R>, type in 'regedit' (w/o quotes) go to 'File'->'Export', choose `"everything`" and export it to e.g. your Desktop."
+    Write-Host "After the following pause, the script will start (however, you will be again asked for each step." -ForegroundColor Magenta
+    Pause
 }
 
 # DEFINITION: Create HKCR as drive for PS:
