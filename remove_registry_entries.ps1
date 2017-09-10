@@ -27,8 +27,8 @@ if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     Exit
 }else{
-    [switch]$wantverbose = $(if((Read-Host "Want some verbose?") -eq 1){$true}else{$false})
-    [switch]$wantwhatif = $(if((Read-Host "Deactivate dry-running?") -eq 1){$false}else{$true})
+    [switch]$wantverbose = $(if((Read-Host "Want some verbose? (To see what's happening)`t") -eq 1){$true}else{$false})
+    [switch]$wantwhatif = $(if((Read-Host "Activate dry-running? (Only show what would happen, not actually doing anything)`t") -eq 1){$true}else{$false})
 }
 
 # DEFINITION: Create HKCR as drive for PS:

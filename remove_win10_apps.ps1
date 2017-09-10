@@ -34,9 +34,9 @@ if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     Exit
 }else{
     [int]$deleteuselessonly = $(if((Read-Host "Delete useless apps only?") -eq 1){1}else{0})
-    [switch]$wantverbose = $(if((Read-Host "Want some verbose?") -eq 1){$true}else{$false})
-    [switch]$wantwhatif = $(if((Read-Host "Deactivate dry-running?") -eq 1){$false}else{$true})
-}
+    [switch]$wantverbose = $(if((Read-Host "Want some verbose? (To see what's happening)`t") -eq 1){$true}else{$false})
+    [switch]$wantwhatif = $(if((Read-Host "Activate dry-running? (Only show what would happen, not actually doing anything)`t") -eq 1){$true}else{$false})
+}   
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
