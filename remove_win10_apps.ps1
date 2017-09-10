@@ -190,9 +190,11 @@ Function Set-Apps(){
     $AppName += "*MinecraftUWP*"
     $Useless += 1
 
+    <# TODO: won't work (Remove-AppxPackage : Deployment failed with HRESULT: 0x80073CFA)
     $ClearName += "Mixed Reality Portal"
     $AppName += "*HolographicFirstRun*"
     $Useless += 1
+    #>
 
     $ClearName += "Money"
     $AppName += "*bingfinance*"
