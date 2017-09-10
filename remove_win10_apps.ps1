@@ -21,6 +21,10 @@
 # Suppressing Remove-AppxPackage's Write-Progress:
 $ProgressPreference = 'SilentlyContinue'
 
+[int]$deleteuselessonly = 1
+[switch]$wantverbose = $true
+[switch]$wantwhatif = $true
+
 # Starting the script as admin and getting values:
 if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) -eq $false){
     Write-Host "This script will ask for admin-rights. It changes the standard-behavior when doubleclicking a *.ps1-file." -ForegroundColor Cyan
@@ -30,6 +34,8 @@ if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     Exit
 }else{
     [int]$deleteuselessonly = $(if((Read-Host "Delete useless apps only?") -eq 1){1}else{0})
+    [switch]$wantverbose = $(if((Read-Host "Want some verbose?") -eq 1){$true}else{$false})
+    [switch]$wantwhatif = $(if((Read-Host "Deactivate dry-running?") -eq 1){$false}else{$true})
 }
 
 # DEFINITION: Making Write-Host much, much faster:
@@ -327,7 +333,7 @@ foreach($i in $AppArray){
         }
         if(($check -eq 1 -and $i.Useless -in (0..1)) -or ($check -eq 2 -and $i.Useless -eq -1)){
             try{
-                Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage
+                Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage -Verbose:$wantverbose -WhatIf:$wantwhatif
                 Write-ColorOut "Removing $($i.ClearName) succeeded." -ForegroundColor DarkGreen
             }catch{
                 Write-ColorOut "Removing $($i.ClearName) failed!" -ForegroundColor Magenta
@@ -338,7 +344,7 @@ foreach($i in $AppArray){
     }else{
         if($i.Useless -eq 1){
             try{
-                Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage
+                Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage -Verbose:$wantverbose -WhatIf:$wantwhatif
                 Write-ColorOut "Removing $($i.ClearName) succeeded." -ForegroundColor DarkGreen
             }catch{
                 Write-ColorOut "Removing $($i.ClearName) failed!" -ForegroundColor Magenta
