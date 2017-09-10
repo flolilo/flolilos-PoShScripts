@@ -52,6 +52,7 @@ if((Read-Host "Remove Windows Media Player from context menu?") -eq 1){
     [array]$regpath = @()
     $regpath += "HKCR:\SystemFileAssociations\Directory.Audio\shell\Enqueue"
     $regpath += "HKCR:\SystemFileAssociations\Directory.Audio\shell\Play"
+    $regpath += "HKCR:\SystemFileAssociations\Directory.Audio\shellex\ContextMenuHandlers\WMPShopMusic"
     $regpath += "HKCR:\SystemFileAssociations\Directory.Image\shell\Enqueue"
     $regpath += "HKCR:\SystemFileAssociations\Directory.Image\shell\Play"
     $regpath += "HKCR:\SystemFileAssociations\Directory.Video\shell\Enqueue"
