@@ -29,7 +29,7 @@ Old version of `security-cam_gui` - will get delted after `security-cam_gui` is 
 Search for old codecs with FFprobe. If wanted, delete them.
 
 ## oldcodec_transcode
-Transcode files in batch with FFmpeg.
+Now almost completely implemented in `oldcodec_searchanddestroy`. Transcode files in batch with FFmpeg.
 
 ## outlook_+_google
 Start Outlook and OutlookGoogleCalendarSync.
