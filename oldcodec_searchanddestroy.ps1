@@ -44,22 +44,29 @@
 param(
     [ValidateScript({Test-Path -Path $_ -PathType Leaf})]
     [string]$FFprobe = "C:\FFMPEG\binaries\ffprobe.exe",
+
     [ValidateScript({Test-Path -Path $_ -PathType Leaf})]
     [string]$Encoder = "C:\FFMPEG\binaries\ffmpeg.exe",
+
     [ValidateScript({Test-Path -Path $_ -PathType Container})]
     [string]$OutPath = "R:\",
+
     [array]$UserInput = @(),
     [array]$FileTypes = @("*.avi","*.mkv","*.mp4","*.mpg","*.mov"),
     [array]$VideoTypes = @("h264","h265"),
     [array]$AudioTypes = @("opus","flac","aac"),
+
     [ValidateRange(0,1)]
-    [int]$OverwriteJSON = 0,
+    [int]$OverwriteJSON = 1,
+
     [ValidateRange(0,1)]
-    [int]$Delete_ProbeFiles = 0,
+    [int]$Delete_ProbeFiles = 1,
+
     [ValidateRange(0,1)]
     [int]$DebugFiles = 1,
+    
     [ValidateRange(0,1)]
-    [int]$StartFFmpeg = 1
+    [int]$StartFFmpeg = 0
 )
 
 #DEFINITION: Hopefully avoiding errors by wrong encoding now:

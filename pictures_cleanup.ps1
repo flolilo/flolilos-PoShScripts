@@ -188,8 +188,8 @@ while($changecounter -ne 0){
             })
         }
     })
-    Write-Progress -Id 1 -Activity "Getting folders..." -Status "Ready" -Completed
-    Write-Progress -Id 2 -Activity "    Getting subfolders..." -Status "    Ready" -Completed
+    Write-Progress -Id 1 -Activity "Getting folders..." -Status "Done" -Completed
+    Write-Progress -Id 2 -Activity "    Getting subfolders..." -Status "    Done" -Completed
 
     $folder = $folder | Sort-Object -Property FullName,SubFolder.FullName
     $folder | Out-Null
