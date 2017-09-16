@@ -22,6 +22,9 @@ Look for files with other extensions than the specified (helps at cleaning up)
 ## foobar_datamover
 Move MP3s after converting them with foobar, so they make sense again.
 
+## ipconfig_replacement
+**Not complete!** A playground for replacing `ipconfig`. Or not.
+
 ## kamera_gui
 Old version of `security-cam_gui` - will get delted after `security-cam_gui` is validated.
 
@@ -60,3 +63,6 @@ Re-encode file from the SD-card of the main station of security cams (with FFmpe
 
 ## split-quadscreen
 Split a (quadscreen-)video into parts with FFmpeg.
+
+## transcodetomp3
+Transcode files that are not MP3 to MP3 with FFmpeg.
