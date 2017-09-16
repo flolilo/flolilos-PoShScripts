@@ -28,6 +28,9 @@ Old version of `security-cam_gui` - will get delted after `security-cam_gui` is 
 ## mysqldump_bash.sh
 _**Not** a PowerShell-script, but a Bash-script._ Make backups of a complete MySQL database via `mysqldump`, then `gzip` it. Delete old files if `>128MB` are used.
 
+## mysqldump_powershell
+**Not yet working!** A PowerShell-implementation of `mysqldump_bash.sh`.
+
 ## oldcodec_searchanddestroy
 Search for old codecs with FFprobe. If wanted, delete them.
 
