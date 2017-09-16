@@ -25,6 +25,9 @@ Move MP3s after converting them with foobar, so they make sense again.
 ## kamera_gui
 Old version of `security-cam_gui` - will get delted after `security-cam_gui` is validated.
 
+## mysqldump_bash.sh
+_**Not** a PowerShell-script, but a Bash-script._ Make backups of a complete MySQL database via `mysqldump`, then `gzip` it. Delete old files if `>128MB` are used.
+
 ## oldcodec_searchanddestroy
 Search for old codecs with FFprobe. If wanted, delete them.
 
