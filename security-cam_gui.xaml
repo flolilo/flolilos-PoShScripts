@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="flolilos Ue-Kamera-Prog v3.0" Height="290" Width="735" ResizeMode="CanMinimize">
+        Title="flolilos Ue-Kamera-Prog v3.0" Height="280" Width="740" ResizeMode="CanMinimize">
     <Grid Background="#FFB3B6B5">
         <TextBlock x:Name="textBlockInput"
             Text="Pfad SD-Karte:" TextWrapping="Wrap"
@@ -12,7 +12,7 @@
             Height="23" Width="80"
         />
         <TextBox x:Name="textBoxIn"
-            Text="Path to SD-Card" ToolTip="SD-Karten-Verzeichnis. Nur nötig, falls auch kopiert wird."
+            Text="textBoxIn" ToolTip="SD-Karten-Verzeichnis. Nur nötig, falls auch kopiert wird."
             VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
             VerticalAlignment="Top" HorizontalAlignment="Left" Margin="103,20,0,0"
             Height="23" Width="500"
@@ -28,7 +28,7 @@
             Height="23"
         />
         <TextBox x:Name="textBoxOut"
-            Text="Path on PC" ToolTip="Ziel-Verzeichnis."
+            Text="textBoxOut" ToolTip="Ziel-Verzeichnis."
             VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
             VerticalAlignment="Top" HorizontalAlignment="Left" Margin="103,60,0,0"
             Height="23" Width="500"
@@ -54,17 +54,17 @@
         </ComboBox>
         <CheckBox x:Name="checkBoxHardware"
             Content="Hardware-Codierung" ToolTip="Wenn aktiviert: geht schneller, kann aber Fehler erzeugen. Empfehlung: Bei Monika AN, bei Franz AUS."
-            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,150,0,0"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,140,0,0"
             Width="153"
         />
         <CheckBox x:Name="checkBoxShutdown"
             Content="Nach Beendigung herunterfahren (keine Funktion bei &quot;Zwischendateien löschen&quot;)" ToolTip="Wenn alles fertig ist, fährt Computer herutner. Vorteilhaft, wenn Programm über Nacht läuft."
-            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,170,0,0"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,160,0,0"
             Width="459"
         />
         <CheckBox x:Name="checkBoxMultithread"
             Content="Multithreading" ToolTip="Rechnet effizienter, PC ist aber daneben kaum noch nutzbar. Gut, wenn über Nacht gerechnet wird."
-            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,190,0,0"
+            VerticalAlignment="Top" HorizontalAlignment="Left" Margin="200,180,0,0"
             Width="153"
         />
         <Button x:Name="buttonProg"
@@ -73,13 +73,13 @@
             Width="105"
         />
         <Button x:Name="buttonStart"
-            Content="START" ToolTip="Tipp: Verzeichnisse vor Beginn überprüfen!"
+            Content="START" FontWeight="Bold" ToolTip="Tipp: Verzeichnisse vor Beginn überprüfen!" Background="#FF63B463"
             HorizontalContentAlignment="Center"
             VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,20"
             Width="110"
         />
         <Button x:Name="buttonClose"
-            Content="Ende" ToolTip="Ciao!"
+            Content="Ende" FontWeight="Bold" ToolTip="Ciao!" Background="#FFC34343" Foreground="White"
             VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,40,20"
             Width="105"
         />
