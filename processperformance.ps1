@@ -1,4 +1,4 @@
-$bla = Get-ChildItem -Path "F:\" -Recurse -File | ForEach-Object {
+$bla = Get-ChildItem -Path "F:\DCIM" -Recurse -File | ForEach-Object {
     [PSCustomObject]@{
         FullName = $_.FullName
         Name = $_.Name
@@ -92,9 +92,9 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
 
     [array]$bla = @()
     for($i=0; $i -lt $MT[$threadcount]; $i++){
-        $bla += Receive-Job -name "test_$i" | Select-Object -Property * -ExcludeProperty RunspaceId,SplitPart
+        $bla += Receive-Job -name "test_$i" -AutoRemoveJob | Select-Object -Property * -ExcludeProperty RunspaceId,SplitPart
     }
-    Get-Job | Remove-Job | Out-Null
+    # Get-Job | Remove-Job | Out-Null
     $speed += $sw.Elapsed.TotalSeconds
     $sw.reset()
     Start-Sleep -Seconds 5
@@ -108,5 +108,16 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
     Get-RSJob -Name "GetHash" | Remove-RSJob
     $speed += $sw.Elapsed.TotalSeconds
     $sw.reset()
+}
 
+if($write -eq 1){
+    $resultsarray = @()
+    for($i = 0; $i -lt $date.Length; $i++){
+        $verifiedObject = new-object PSObject
+        $verifiedObject | add-member -membertype NoteProperty -name "Date" -Value $date[$i]
+        $verifiedObject | add-member -membertype NoteProperty -name "Process" -Value $process[$i]
+        $verifiedObject | add-member -membertype NoteProperty -name "Speed" -Value $speed[$i]
+        $resultsarray += $verifiedObject
+    }
+    $resultsarray| Export-csv $outfile -notypeinformation -Encoding UTF8
 }

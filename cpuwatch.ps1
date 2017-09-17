@@ -79,4 +79,5 @@ if($write -eq 1){
     }
     $resultsarray| Export-csv $outfile -notypeinformation -Encoding UTF8
 }
+Write-Host "Done!" -ForegroundColor Green
 Pause
