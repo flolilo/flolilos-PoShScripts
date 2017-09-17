@@ -1,4 +1,16 @@
-$bla = Get-ChildItem -Path "F:\temp\timetest\DCIM" -Recurse -File | ForEach-Object {
+#requires -version 3
+
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$outfile,
+    [Parameter(Mandatory=$true)]
+    [ValidateScript({Test-Path -Path $_ -Pathtype Container})]
+    [string]$InPath,
+    [Parameter(Mandatory=$true)]
+    [ValidateRange(0,1)] 
+    [int]$write
+)
+$bla = Get-ChildItem -Path $InPath -Recurse -File | ForEach-Object {
     [PSCustomObject]@{
         FullName = $_.FullName
         Name = $_.Name
@@ -116,7 +128,6 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
 }
 
 [array]$results = @()
-[string]$outfile = "$($PSScriptRoot)\stats_performance.csv"
 for($i=0; $i -lt $date.Length; $i++){
     $verifiedObject = New-Object PSObject
     $verifiedObject | Add-Member -MemberType NoteProperty -Name "Date" -Value $date[$i]
@@ -124,4 +135,4 @@ for($i=0; $i -lt $date.Length; $i++){
     $verifiedObject | Add-Member -MemberType NoteProperty -Name "Speed" -Value $speed[$i]
     $results += $verifiedObject
 }
-$results | Export-Csv -Path $outfile -NoTypeInformation -Encoding UTF8
+$results | Export-Csv -Path "$($PSScriptRoot)\$($outfile).csv" -NoTypeInformation -Encoding UTF8

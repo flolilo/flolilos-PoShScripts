@@ -1,4 +1,4 @@
-#requires -version 2
+#requires -version 3
 
 <#
     .SYNOPSIS
@@ -30,10 +30,13 @@
         cpuwatch.ps1 -write 1 -process "ffmpeg"
 #>
 param(
+    [Parameter(Mandatory=$true)]
+    [ValidateRange(0,1)]
     [int]$write=1,
     [string]$process="powershell",
-    [string]$mode,
-    [string]$outfile="$($PSScriptRoot)\stats_cpu-ram.csv"
+    # [string]$mode,
+    [Parameter(Mandatory=$true)]
+    [string]$outfile
 )
 
 # Get all error-outputs in English:
@@ -81,7 +84,7 @@ if($write -eq 1){
         $verifiedObject | Add-Member -MemberType NoteProperty -Name "RAM" -Value $ram[$i]
         $results += $verifiedObject
     }
-    $results | Export-Csv -Path $outfile -NoTypeInformation -Encoding UTF8
+    $results | Export-Csv -Path "$($PSScriptRoot)\$($outfile).csv" -NoTypeInformation -Encoding UTF8
 }
 
 Write-Host "Done!" -ForegroundColor Green
