@@ -7,6 +7,10 @@ $bla = Get-ChildItem -Path "F:\temp\timetest\DCIM" -Recurse -File | ForEach-Obje
         HashC = "ZYX"
     }
 }
+
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+
 $bla = $bla | Sort-Object -Property FullName
 $bla | Out-Null
 $MT = @(1,2,4,6,8,12,16,24)

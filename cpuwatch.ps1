@@ -36,18 +36,21 @@ param(
     [string]$outfile="$($PSScriptRoot)\stats_cpu-ram.csv"
 )
 
+# Get all error-outputs in English:
+[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+
 [int]$done = 0
 [array]$date = @()
 [array]$cpu = @()
 [array]$ram = @()
 
 Function Get-ComputerStats(){
-    $script:cpu += Get-WmiObject win32_processor | Measure-Object -property LoadPercentage -Average | ForEach-Object {
-        # Write-Host "$($_.Average)"
-        $_.Average
-    }
-    $script:ram += Get-WmiObject win32_operatingsystem | ForEach-Object {
-        "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory)*100)/ $_.TotalVisibleMemorySize)
+    $script:cpu += Get-CimInstance win32_processor | Measure-Object -property LoadPercentage -Average | Select-Object -ExpandProperty Average
+    $script:ram += Get-CimInstance win32_operatingsystem | ForEach-Object {
+        # Percent:
+        # "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory)*100)/ $_.TotalVisibleMemorySize)
+        # Absolute:
+        (($_.TotalVisibleMemorySize - $_.FreePhysicalMemory) / 1MB)
     }
 }
 
