@@ -18,7 +18,7 @@
         Creation Date:  2017-08-18 (GitHub release)
 
     .PARAMETER write
-        1 enables writing ot -outfile, 0 disables it.
+        1 enables writing out -outfile, 0 disables it.
     .PARAMETER process
         Process that will limit the watching time. E.g. if "ffmpeg" is specified, the script will work until all instances of ffmpeg are finished.
     .PARAMETER mode
@@ -31,7 +31,7 @@
 #>
 
 param(
-    [int]$write=0,
+    [int]$write=1,
     [string]$process="powershell",
     [string]$mode,
     [string]$outfile="$($PSScriptRoot)\stats.csv"
@@ -42,8 +42,13 @@ param(
 [array]$ram = @()
 
 Function Get-ComputerStats(){
-    $script:cpu += Get-WmiObject win32_processor | Measure-Object -property LoadPercentage -Average | ForEach-Object {Write-Host "$($_.Average)"; $_.Average}
-    $script:ram += Get-WmiObject win32_operatingsystem | ForEach-Object {"{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory)*100)/ $_.TotalVisibleMemorySize)}
+    $script:cpu += Get-WmiObject win32_processor | Measure-Object -property LoadPercentage -Average | ForEach-Object {
+        # Write-Host "$($_.Average)"
+        $_.Average
+    }
+    $script:ram += Get-WmiObject win32_operatingsystem | ForEach-Object {
+        "{0:N2}" -f ((($_.TotalVisibleMemorySize - $_.FreePhysicalMemory)*100)/ $_.TotalVisibleMemorySize)
+    }
 }
 
 # DEFINITION: for timing:
@@ -51,6 +56,9 @@ while($done -le 15){
     $date += Get-Date -Format "dd.MM.yy HH:mm:ss"
     Get-ComputerStats
     $activeProcessCounter = @(Get-Process -ErrorAction SilentlyContinue -Name $process).count
+    if($process -eq "powershell"){
+        $activeProcessCounter--
+    }
     if($activeProcessCounter -eq 0){
         $done++
     }else{
