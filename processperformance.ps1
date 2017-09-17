@@ -1,4 +1,4 @@
-$bla = Get-ChildItem -Path "F:\DCIM" -Recurse -File | ForEach-Object {
+$bla = Get-ChildItem -Path "F:\temp\timetest\DCIM" -Recurse -File | ForEach-Object {
     [PSCustomObject]@{
         FullName = $_.FullName
         Name = $_.Name
@@ -11,11 +11,12 @@ $bla = $bla | Sort-Object -Property FullName
 $bla | Out-Null
 $MT = @(1,2,4,6,8,12,16,24)
 
-[string]$outfile="$($PSScriptRoot)\performance.csv"
+
 [array]$date = @()
 [array]$process = @()
 [array]$speed = @()
 
+Write-Host "Running processperformance.ps1" -ForegroundColor Cyan
 Start-Sleep -Seconds 5
 
 $date+= Get-Date -Format "dd.MM.yy HH:mm:ss"
@@ -88,11 +89,11 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
         } -ArgumentList (,$array) | Out-Null
     }
 
-    Wait-Job -name "test_*" | Out-Null
+    # Wait-Job -name "test_*" | Out-Null
 
     [array]$bla = @()
     for($i=0; $i -lt $MT[$threadcount]; $i++){
-        $bla += Receive-Job -name "test_$i" -AutoRemoveJob | Select-Object -Property * -ExcludeProperty RunspaceId,SplitPart
+        $bla += Receive-Job -Wait -AutoRemoveJob -Name "test_$i" | Select-Object -Property * -ExcludeProperty RunspaceId,SplitPart
     }
     # Get-Job | Remove-Job | Out-Null
     $speed += $sw.Elapsed.TotalSeconds
@@ -104,20 +105,19 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
     $sw.start()
     $bla | Start-RSJob -Name "GetHash" -throttle $MT[$threadcount] -ScriptBlock {
         $_.HashC = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA1 | Select-Object -ExpandProperty Hash
-    } | Wait-RSJob -ShowProgress | Receive-RSJob
+    } | Wait-RSJob | Receive-RSJob
     Get-RSJob -Name "GetHash" | Remove-RSJob
     $speed += $sw.Elapsed.TotalSeconds
     $sw.reset()
 }
 
-if($write -eq 1){
-    $resultsarray = @()
-    for($i = 0; $i -lt $date.Length; $i++){
-        $verifiedObject = new-object PSObject
-        $verifiedObject | add-member -membertype NoteProperty -name "Date" -Value $date[$i]
-        $verifiedObject | add-member -membertype NoteProperty -name "Process" -Value $process[$i]
-        $verifiedObject | add-member -membertype NoteProperty -name "Speed" -Value $speed[$i]
-        $resultsarray += $verifiedObject
-    }
-    $resultsarray| Export-csv $outfile -notypeinformation -Encoding UTF8
+[array]$results = @()
+[string]$outfile = "$($PSScriptRoot)\stats_performance.csv"
+for($i=0; $i -lt $date.Length; $i++){
+    $verifiedObject = New-Object PSObject
+    $verifiedObject | Add-Member -MemberType NoteProperty -Name "Date" -Value $date[$i]
+    $verifiedObject | Add-Member -MemberType NoteProperty -Name "Process" -Value $process[$i]
+    $verifiedObject | Add-Member -MemberType NoteProperty -Name "Speed" -Value $speed[$i]
+    $results += $verifiedObject
 }
+$results | Export-Csv -Path $outfile -NoTypeInformation -Encoding UTF8

@@ -29,13 +29,13 @@
     .EXAMPLE
         cpuwatch.ps1 -write 1 -process "ffmpeg"
 #>
-
 param(
     [int]$write=1,
     [string]$process="powershell",
     [string]$mode,
-    [string]$outfile="$($PSScriptRoot)\stats.csv"
+    [string]$outfile="$($PSScriptRoot)\stats_cpu-ram.csv"
 )
+
 [int]$done = 0
 [array]$date = @()
 [array]$cpu = @()
@@ -51,6 +51,7 @@ Function Get-ComputerStats(){
     }
 }
 
+Write-Host "Running cpuwatch.ps1" -ForegroundColor Cyan
 # DEFINITION: for timing:
 while($done -le 15){
     $date += Get-Date -Format "dd.MM.yy HH:mm:ss"
@@ -59,7 +60,7 @@ while($done -le 15){
     if($process -eq "powershell"){
         $activeProcessCounter--
     }
-    if($activeProcessCounter -eq 0){
+    if($activeProcessCounter -le 0){
         $done++
     }else{
         $done = 0
@@ -69,15 +70,16 @@ while($done -le 15){
 
 
 if($write -eq 1){
-    $resultsarray = @()
+    [array]$results = @()
     for($i = 0; $i -lt $date.Length; $i++){
-        $verifiedObject = new-object PSObject
-        $verifiedObject | add-member -membertype NoteProperty -name "Date" -Value $date[$i]
-        $verifiedObject | add-member -membertype NoteProperty -name "CPU" -Value $cpu[$i]
-        $verifiedObject | add-member -membertype NoteProperty -name "RAM" -Value $ram[$i]
-        $resultsarray += $verifiedObject
+        $verifiedObject = New-Object PSObject
+        $verifiedObject | Add-Member -MemberType NoteProperty -Name "Date" -Value $date[$i]
+        $verifiedObject | Add-Member -MemberType NoteProperty -Name "CPU" -Value $cpu[$i]
+        $verifiedObject | Add-Member -MemberType NoteProperty -Name "RAM" -Value $ram[$i]
+        $results += $verifiedObject
     }
-    $resultsarray| Export-csv $outfile -notypeinformation -Encoding UTF8
+    $results | Export-Csv -Path $outfile -NoTypeInformation -Encoding UTF8
 }
+
 Write-Host "Done!" -ForegroundColor Green
 Pause
