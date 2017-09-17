@@ -3,4 +3,5 @@
 *.txt
 *.pdf
 *.csv
+*.xlsx
 /movies/*

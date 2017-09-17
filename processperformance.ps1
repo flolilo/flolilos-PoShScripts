@@ -35,7 +35,7 @@ $MT = @(1,2,4,6,8,12,16,24)
 Write-Host "Running processperformance.ps1" -ForegroundColor Cyan
 Start-Sleep -Seconds 5
 
-$date+= Get-Date -Format "dd.MM.yy HH:mm:ss"
+$date += Get-Date -Format "dd.MM.yy HH:mm:ss"
 $process += "For-loop"
 $sw = [diagnostics.stopwatch]::StartNew()
 for($i=0; $i -lt $bla.Length; $i++){
@@ -126,6 +126,10 @@ for($threadcount=0; $threadcount -lt $MT.Length; $threadcount++){
     $speed += $sw.Elapsed.TotalSeconds
     $sw.reset()
 }
+
+$date += Get-Date -Format "dd.MM.yy HH:mm:ss"
+$process += "Done"
+$speed += 0
 
 [array]$results = @()
 for($i=0; $i -lt $date.Length; $i++){

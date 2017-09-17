@@ -32,7 +32,7 @@
 param(
     [Parameter(Mandatory=$true)]
     [ValidateRange(0,1)]
-    [int]$write=1,
+    [int]$write,
     [string]$process="powershell",
     # [string]$mode,
     [Parameter(Mandatory=$true)]
