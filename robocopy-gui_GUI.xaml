@@ -1,0 +1,297 @@
+<!--
+    Description:    This is the GUI for robocopy_gui.ps1
+    Date:           2017-08-31
+    By:             flolilo
+-->
+<Window x:Class="MediaCopytool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Robocopy-GUI v0.1" Height="320" Width="800" ResizeMode="CanMinimize">
+    <Grid Background="#FFB3B6B5">
+        <TabControl x:Name="tabControl" VerticalAlignment="Top" Margin="0,0,0,0" Height="240" Background="#FFB3B6B5" BorderBrush="#FF878787">
+            <TabItem Header="Paths">
+                <Grid Background="#FFB3B6B5">
+                    <TextBlock x:Name="textBlockInput"
+                        Text="Input-path:" TextAlignment="Right"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,33,0,0"
+                        Width="70"
+                    />
+                    <TextBox x:Name="textBoxInput"
+                        Text="textBoxInput" VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,30,0,0"
+                        Height="22" Width="500"
+                    />
+                    <Button x:Name="buttonSearchIn"
+                        Content="Select Path..."
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,30,100,0"
+                        Height="22" Width="80"
+                    />
+                    <CheckBox x:Name="checkBoxRememberIn"
+                        Content="Remember" ToolTip="Remembers the Input-Path for future executions." VerticalContentAlignment="Center"
+                        Foreground="#FFC90000" FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,30,15,0" Padding="4,-2,0,0" 
+                        Height="22" Width="80"
+                    />
+                    <TextBlock x:Name="textBlockOutput"
+                        Text="Output-path:" TextAlignment="Right"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,73,0,0"
+                        Width="70"
+                    />
+                    <TextBox x:Name="textBoxOutput"
+                        Text="textBoxOutput" VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,70,0,0" 
+                        Height="22" Width="500"
+                    />
+                    <Button x:Name="buttonSearchOut"
+                        Content="Select Path..."
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,70,100,0"
+                        Height="22" Width="80"
+                    />
+                    <CheckBox x:Name="checkBoxRememberOut"
+                        Content="Remember" ToolTip="Remembers the Output-Path for future executions." VerticalContentAlignment="Center"
+                        Foreground="#FFC90000" FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,70,15,0" Padding="4,-2,0,0"
+                        Height="22" Width="80"
+                    />
+                    <TextBlock x:Name="textBlockReminder"
+                        Text="For all options and features, go to the Settings-tab!"
+                        Foreground="#FF2C2C2C" FontSize="16" FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,162,0,0"
+                    />
+                </Grid>
+            </TabItem>
+            <TabItem Header="Settings" IsEnabled="False">
+                <Grid Background="#FFB3B6B5">
+                    <TextBlock Name="textBlockPresetFormats"
+                        Text="Formats to copy:"
+                        FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,0,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxCan"
+                        Content="Canon" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,30,0,0"
+                        Width="64"
+                    />
+                    <TextBlock x:Name="textBlockCan"
+                        Text="- CR2"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,30,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxNik"
+                        Content="Nikon" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,50,0,0"
+                        Width="64"
+                    />
+                    <TextBlock x:Name="textBlockNik"
+                        Text="- NEF &amp; NRW"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,50,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxSon"
+                        Content="Sony" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,70,0,0"
+                        Width="64"
+                    />
+                    <TextBlock x:Name="textBlockSon"
+                        Text="- ARW"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,70,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxJpg"
+                        Content="JPEG" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,90,0,0"
+                        Width="64"
+                    />
+                    <TextBlock x:Name="textBlockJpg"
+                        Text="- JPG &amp; JPEG"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,90,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxMov"
+                        Content="Movies" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,110,0,0"
+                        Width="64"
+                    />
+                    <TextBlock x:Name="textBlockMov"
+                        Text="- MOV &amp; MP4"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,110,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxAud"
+                        Content="Audio" VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,130,0,0"
+                        Width="64" 
+                    />
+                    <TextBlock x:Name="textBlockAud"
+                        Text="- WAV &amp; MP3 &amp; M4A"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,130,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxCustom"
+                        Content="Custom:" ToolTip="Enable to copy customised file-formats." VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,150,0,0" Padding="4,-2,0,0"
+                        Height="22" Width="64"
+                    />
+                    <TextBox x:Name="textBoxCustom"
+                        Text="textBoxCustoms" FontFamily="Consolas" ToolTip="*.ext1,*.ext2,*.ext3" VerticalContentAlignment="Center" VerticalScrollBarVisibility="Disabled" TextWrapping="Wrap"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,150,0,0"
+                        Height="22" Width="140"
+                    />
+                    <Rectangle Fill="#FFB3B6B5" Stroke="#FF878787" Panel.ZIndex="-1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="250,0,0,0" Height="220" Width="2"/>
+
+                    <TextBlock x:Name="textBlockOutSubStyle"
+                        Text="Subfolder-style:"
+                        FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,0,0,0"
+                    />
+                    <ComboBox x:Name="comboBoxOutSubStyle" SelectedIndex="1"
+                        ToolTip="Choose your favorite subfolder-style." VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,20,0,0"
+                        Height="23" Width="215">
+                        <ComboBoxItem Content="No subfolders"/>
+                        <ComboBoxItem Content="Unchanged"/>
+                        <ComboBoxItem Content="yyyy-MM-dd - 2017-12-31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyyy_MM_dd - 2017_12_31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyyy.MM.dd - 2017.12.31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyyyMMdd   - 20171231" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yy-MM-dd - 17-12-31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yy_MM_dd - 17_12_31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yy.MM.dd - 17.12.31" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyMMdd   - 171231" FontFamily="Consolas"/>
+                    </ComboBox>
+                    <Rectangle Fill="#FFB3B6B5" Stroke="#FF878787" Panel.ZIndex="-1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="250,55,0,0" Height="2" Width="250"/>
+
+                    <TextBlock x:Name="textBlockOutFileStyle"
+                        Text="File-renaming-style:"
+                        FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,60,0,0"
+                    />
+                    <ComboBox x:Name="comboBoxOutFileStyle" SelectedIndex="0" IsEnabled="False"
+                        ToolTip="(TODO:)Choose your favorite style for renaming the input-files." VerticalContentAlignment="Center"
+                        FontFamily="Consolas"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,80,0,0"
+                        Height="23" Width="215">
+                        <ComboBoxItem Content="Unchanged"/>
+                        <ComboBoxItem Content="yyyy-MM-dd_HH-mm-ss - 2017-01-31_13-59-58.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyyyMMdd_HHmmss     - 20170131_135958.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyyyMMddHHmmss      - 20170131135958.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yy-MM-dd_HH-mmss - 17-01-31_13-59-58.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyMMdd_HHmmss    - 170131_135958.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="yyMMddHHmmss     - 170131135958.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="HH-mm-ss - 2017-01-31_13-59-58.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="HH_mm_ss - 20170131_135958.ext" FontFamily="Consolas"/>
+                        <ComboBoxItem Content="HHmmss   - 20170131135958.ext" FontFamily="Consolas"/>
+                    </ComboBox>
+                    <Rectangle Fill="#FFB3B6B5" Stroke="#FF878787" Panel.ZIndex="-1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="250,115,0,0" Height="2" Width="250"/>
+
+                    <TextBlock x:Name="textBlockHistFile"
+                        Text="History-file options:"
+                        FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,120,0,0"
+                    />
+                    <CheckBox x:Name="checkBoxUseHistFile"
+                        Content="Use history-file to prevent duplicates" ToolTip="Default. Fast way to prevent already copied files from being copied again." VerticalContentAlignment="Center"
+                        Foreground="#FF00A22C"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,140,0,0"
+                    />
+                    <ComboBox x:Name="comboBoxWriteHistFile" SelectedIndex="0"
+                        ToolTip="Choose how the script writes new files to the history-file." VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="270,160,0,0"
+                        Height="23" Width="215">
+                        <ComboBoxItem Content="Write old &amp; new files to history-file"/>
+                        <ComboBoxItem Content="Delete old files, write new ones"/>
+                        <ComboBoxItem Content="Don't add new files to history-file"/>
+                    </ComboBox>
+                    <Rectangle Fill="#FFB3B6B5" Stroke="#FF878787" Panel.ZIndex="-1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="500,0,0,0" Height="220" Width="2"/>
+
+                    <TextBlock x:Name="textBlockOptions" Text="Other options:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,0,0,0" FontWeight="Bold"/>
+                    <CheckBox x:Name="checkBoxInSubSearch"
+                        Content="Dive into subfolders in input-path" ToolTip="Default. E.g. not only searching files in E:\DCIM, but also in E:\DCIM\abc" VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,20,0,0"
+                        Width="220"
+                    />
+                    <CheckBox x:Name="checkBoxCheckInHash"
+                        Content="Check hashes of all input-files" ToolTip="If unchecked, duplicate-check is done via name, size, date. If checked, hash is added. Enabling duplicate-check in output-path disables this function." VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,40,0,0"
+                        Width="220"
+                    />
+                    <CheckBox x:Name="checkBoxOutputDupli"
+                        Content="Check for duplicates in output-path" ToolTip="Searches for duplicates in the output-path (incl. subfolders). Ideal if you have used LR or other import-tools since the last card-formatting." VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,60,0,0"
+                        Width="220"
+                    />
+                    <CheckBox x:Name="checkBoxVerifyCopies"
+                        Content="Verify copied files" ToolTip="Suggestted. After copying, script will check if files were copied successfully. Disabling will save time." VerticalContentAlignment="Center"
+                        Foreground="#FF00A22C"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,80,0,0"
+                        Width="220"
+                    />
+                    <CheckBox x:Name="checkBox7zipMirror"
+                        Content="Mirroring files as 7z-archive" ToolTip="(TODO:)Creating an archive with the input-files in it - good as a backup." VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,100,0,0"
+                        Width="220" IsEnabled="False"
+                    />
+                    <!-- TODO: <CheckBox x:Name="checkBoxPreventDupli"
+                        Content="Prevent duplicates from in-path" ToolTip="Prevent duplicates from the input-path (e.g. same file in two folders)."
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,1100,0,0"
+                        Width="220"
+                    /> -->
+                    <CheckBox x:Name="checkBoxUnmountInputDrive"
+                        Content="Remove input-drive after copying" ToolTip="Safely removing the input-drive after successful verification (before mirroring). Note: It does not work with all drives - so double-check if your drive was removed!" VerticalContentAlignment="Center"
+                        Foreground="#FFFF1717"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,120,0,0"
+                        Width="220"
+                    />
+                    <CheckBox x:Name="checkBoxPreventStandby"
+                        Content="Prevent computer-standby" ToolTip="Prevents system from hibernating by simulating the keystroke of F13." VerticalContentAlignment="Center"
+                        Foreground="#FF0080FF"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,140,0,0"
+                        Width="220"
+                    />
+                    <TextBlock x:Name="textBlockThreadCount"
+                        Text="Thread Count:"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,165,0,0"
+                    />
+                    <Slider x:Name="sliderThreadCount" ToolTip="Number of threads for operations. High numbers tend to slow everything down; recommended: 2-4." Minimum="1" Maximum="24" TickPlacement="TopLeft" Width="118" Height="26" SmallChange="1" Value="1" IsSnapToTickEnabled="True" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="612,160,0,0"/>
+                    <TextBox x:Name="textBoxThreadCount"
+                        Text="{Binding ElementName=sliderThreadCount, Path=Value, UpdateSourceTrigger=PropertyChanged}" ToolTip="Number of threads for operations. High numbers tend to slow everything down; recommended: 2-4." TextAlignment="Center" VerticalContentAlignment="Center"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" HorizontalContentAlignment="Center" Margin="735,160,0,0"
+                        Height="26" Width="30"
+                    />
+                    <CheckBox x:Name="checkBoxRememberSettings"
+                        Content="Remember settings" ToolTip="Remember all parameters (excl. Remember-Checkboxes)" VerticalContentAlignment="Center"
+                        Foreground="#FFC90000" FontWeight="Bold"
+                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="520,190,0,0" Padding="4,-2,0,0"
+                        Height="20"
+                    />
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Button x:Name="buttonStart"
+            Content="START"
+            FontWeight="Bold"
+            VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,15"
+            Width="100"
+        />
+        <Button x:Name="buttonClose"
+            Content="EXIT"
+            VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,40,15"
+            Width="100"
+        />
+        <Button x:Name="buttonAbout"
+            Content="About / Help"
+            VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="40,0,0,15"
+            Width="100"
+        />
+    </Grid>
+</Window>
