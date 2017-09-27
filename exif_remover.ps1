@@ -145,8 +145,7 @@ Function Start-Sound($Success){
 
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
-    # DEFINITION: If no manual input is given, search for file:
-    if($script:AddCopyright -eq 1 -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
+    if($script:AddCopyright -eq $true -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -PathType Leaf) -eq $true){
             $temp = Get-Content -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -Raw -Encoding UTF8 | ConvertFrom-StringData
             [string]$script:ArtistName = $temp.artist_name
