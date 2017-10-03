@@ -3,10 +3,8 @@
 <#
     .SYNOPSIS
         Prevents idle-standby while CPU is working or while specified processes are running.
-
     .DESCRIPTION
         Will simulate F15-key-press to prevent computer from entering standby. 
-
     .NOTES
         Version:    2.0
         Author:     flolilo
