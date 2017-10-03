@@ -54,7 +54,7 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-09-18
+            Date: 2017-10-03
         
         .PARAMETER Object
             String to write out
@@ -69,11 +69,13 @@ Function Write-ColorOut(){
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
+        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
-        [string]$ForegroundColor=[Console]::ForegroundColor,
+        [string]$ForegroundColor,
 
+        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
-        [string]$BackgroundColor=[Console]::BackgroundColor,
+        [string]$BackgroundColor,
 
         [switch]$NoNewLine=$false,
 

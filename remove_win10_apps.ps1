@@ -43,39 +43,49 @@ Function Write-ColorOut(){
     <#
         .SYNOPSIS
             A faster version of Write-Host
-        
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
-
         .NOTES
-            Date: 2017-09-08
+            Date: 2017-10-03
         
         .PARAMETER Object
             String to write out
-        
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
-        
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
-        
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
-        
-        .EXAMPLE
-            Write-ColorOut "Hello World!" -ForegroundColor Green -NoNewLine
     #>
     param(
+        [Parameter(Mandatory=$true)]
         [string]$Object,
-        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$ForegroundColor=[Console]::ForegroundColor,
-        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")][string]$BackgroundColor=[Console]::BackgroundColor,
-        [switch]$NoNewLine=$false
+
+        [Parameter(Mandatory=$false)]
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
+        [string]$ForegroundColor,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
+        [string]$BackgroundColor,
+
+        [switch]$NoNewLine=$false,
+
+        [ValidateRange(0,48)]
+        [int]$Indentation=0
     )
-    $old_fg_color = [Console]::ForegroundColor
-    $old_bg_color = [Console]::BackgroundColor
-    
-    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $ForeGroundColor}
-    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $BackgroundColor}
+
+    if($ForegroundColor.Length -ge 3){
+        $old_fg_color = [Console]::ForegroundColor
+        [Console]::ForegroundColor = $ForeGroundColor
+    }
+    if($BackgroundColor.Length -ge 3){
+        $old_bg_color = [Console]::BackgroundColor
+        [Console]::BackgroundColor = $BackgroundColor
+    }
+    if($Indentation -gt 0){
+        [Console]::CursorLeft = $Indentation
+    }
 
     if($NoNewLine -eq $false){
         [Console]::WriteLine($Object)
@@ -83,8 +93,12 @@ Function Write-ColorOut(){
         [Console]::Write($Object)
     }
     
-    if($ForeGroundColor -ne $old_fg_color){[Console]::ForegroundColor = $old_fg_color}
-    if($BackgroundColor -ne $old_bg_color){[Console]::BackgroundColor = $old_bg_color}
+    if($ForegroundColor.Length -ge 3){
+        [Console]::ForegroundColor = $old_fg_color
+    }
+    if($BackgroundColor.Length -ge 3){
+        [Console]::BackgroundColor = $old_bg_color
+    }
 }
 
 

@@ -48,9 +48,16 @@
 param(
     [string]$Mode = "specify",
     [array]$Process = @(),
+
     [int]$CPUthresh = 0,
-    [ValidateRange(10,3600)][int]$TimeBase = 300,
-    [ValidateRange(1,100)][int]$CounterMax = 10,
+
+    # DEFINITION:/CREDIT: https://superuser.com/a/1023836/703240
+    [ValidateRange(10,3600)]
+    [int]$TimeBase = 90,
+
+    [ValidateRange(1,100)]
+    [int]$CounterMax = 10,
+
     [int]$Shutdown = -1
 )
 
@@ -67,7 +74,7 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-09-18
+            Date: 2017-10-03
         
         .PARAMETER Object
             String to write out
@@ -82,15 +89,20 @@ Function Write-ColorOut(){
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
+        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
-        [string]$ForegroundColor=[Console]::ForegroundColor,
+        [string]$ForegroundColor,
 
+        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
-        [string]$BackgroundColor=[Console]::BackgroundColor,
+        [string]$BackgroundColor,
 
-        [switch]$NoNewLine=$false
+        [switch]$NoNewLine=$false,
+
+        [ValidateRange(0,48)]
+        [int]$Indentation=0
     )
-    
+
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
         [Console]::ForegroundColor = $ForeGroundColor
@@ -98,6 +110,9 @@ Function Write-ColorOut(){
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
         [Console]::BackgroundColor = $BackgroundColor
+    }
+    if($Indentation -gt 0){
+        [Console]::CursorLeft = $Indentation
     }
 
     if($NoNewLine -eq $false){
@@ -131,9 +146,7 @@ Function Get-UserVars(){
                 continue
             }
         }
-    }
-    
-    if($script:Mode -eq "cpu"){
+    }elseif($script:Mode -eq "cpu"){
         if($CPUthresh -notin (2..99)){
             while($true){
                 Write-ColorOut "Enter the CPU-threshold in %. (enter w/o %-sign) - Recommendation: 90% // Grenzwert der CPU-Auslastung in % angeben. (Angabe ohne %-Zeichen) Empfehlung: 90%`t" -ForegroundColor Gray -NoNewLine
@@ -168,9 +181,7 @@ Function Get-UserVars(){
         }else{
             [int]$script:PoShCompensation = 0
         }
-    }
-
-    if($script:Mode -ne "none" -and $script:Shutdown -notin (0..1)){
+    }elseif($script:Mode -ne "none" -and $script:Shutdown -notin (0..1)){
         while($true){
             Write-ColorOut "Shutdown when done? `"1`" for yes, `"0`" for no: // Nach Abschluss herunterfahren? `"1`" fuer Ja, `"0`" fuer Nein:`t" -ForegroundColor Gray -NoNewLine
             [int]$script:Shutdown = Read-Host
