@@ -4,4 +4,5 @@
 *.pdf
 *.csv
 *.xlsx
+*.json
 /movies/*
