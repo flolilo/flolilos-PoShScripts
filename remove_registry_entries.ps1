@@ -6,8 +6,8 @@
     .DESCRIPTION
         Please be careful with using this tool!
     .NOTES
-        Version:        1.0
-        Creation Date:  2017-09-10
+        Version:        1.1
+        Creation Date:  2017-10-09
         Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
         applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
         on the WWW). However, some parts are copies or modifications of very genuine code - see
@@ -36,7 +36,6 @@ if((([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
 }
 
 # DEFINITION: Create HKCR as drive for PS:
-# CREDIT: https://blogs.technet.microsoft.com/heyscriptingguy/2012/05/07/use-the-powershell-registry-provider-to-simplify-registry-access/
 try{
     New-PSDrive -PSProvider Registry -Root HKEY_CLASSES_ROOT -Name HKCR -Verbose:$wantverbose -WhatIf:$false
 }catch{
@@ -46,7 +45,7 @@ try{
 }
 
 # DEFINITION: Remove Windows Media Player from context menu:
-# CREDIT: https://superuser.com/questions/178566/how-to-disable-play-with-windows-media-player-contextual-menu#235385
+# CREDIT: https://superuser.com/a/235385/703240
 if((Read-Host "Remove Windows Media Player from context menu?") -eq 1){
     Write-Host "Remove Windows Media Player from context menu..." -ForegroundColor Cyan
     [array]$regpath = @()
@@ -83,7 +82,8 @@ if((Read-Host "Remove Visual Studio from context menu?") -eq 1){
     [string]$regpath = "HKCR:\Directory\Background\shell\AnyCode"
     [string]$regname = "HideBasedOnVelocityId"
     $regvalue = 0x006698a6
-    if((Get-ItemPropertyValue -Path $regpath -Name $regname -ErrorAction SilentlyContinue) -eq $regvalue){
+    
+    if((Test-Path -Path $regpath\$regname -ErrorAction SilentlyContinue) -eq $true -and (Get-ItemPropertyValue -Path $regpath -Name $regname -ErrorAction SilentlyContinue) -eq $regvalue){
         Write-Host "$regpath\$regname already set to $regvalue" -ForegroundColor DarkGreen
     }else{
         try{
