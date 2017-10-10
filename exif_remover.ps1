@@ -6,40 +6,42 @@
     .DESCRIPTION
         Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
     .NOTES
-        Version:        1.3
+        Version:        1.4
         Author:         flolilo
-        Creation Date:  2017-09-27
+        Creation Date:  2017-10-10
 
     .INPUTS
         exiftool.exe
-        (optional) exif_remover_vars.txt, formatted in UTF8 for copyright-values (if not provided via parameters).
+        (optional) exif_remover_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters).
     .OUTPUTS
         none.
 
+    .PARAMETER InputPath
+        Path where images should be searched and edited (default: current path of console).
     .PARAMETER AddCopyright
         Enables or disables writing of copyright-information (specified with -ArtistName and -CopyrightText).
     .PARAMETER ArtistName
         Name of artist.
     .PARAMETER CopyrightText
         Copyright-information you want to add.
-    .PARAMETER Encoder
-        Path to exiftool.exe
-    .PARAMETER InputPath
-        Path where images should be searched and edited (default: current path of console).
     .PARAMETER ThreadCount
         How many exiftool-instances run simultaneously. Default: 8, Valid: 1-128.
+    .PARAMETER Encoder
+        Path to exiftool.exe.
+    .PARAMETER ShowValues
+        Only show copyright-values.
 
     .EXAMPLE
         exit_remover -AddCopyright 1 -ArtistName "John Doe" -CopyrightText "2017, by John Doe. -Encoder "C:\exiftool.exe"
 #>
 param(
+    [string]$InputPath = "$((Get-Location).Path)",
     [switch]$AddCopyright = $false,
     [string]$ArtistName = "",
     [string]$CopyrightText = "",
-    [string]$Encoder = "$($PSScriptRoot)\exiftool.exe",
-    [string]$InputPath = (Get-Location).Path,
     [ValidateRange(1,128)]
     [int]$ThreadCount = 8,
+    [string]$Encoder = "$($PSScriptRoot)\exiftool.exe",
     [switch]$ShowValues = $false
 )
 
@@ -148,10 +150,12 @@ Function Start-Sound($Success){
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
     if($script:AddCopyright -eq $true -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
-        if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -PathType Leaf) -eq $true){
-            $temp = Get-Content -LiteralPath "$($PSScriptRoot)\exif_remover_vars.txt" -Raw -Encoding UTF8 | ConvertFrom-StringData
-            [string]$script:ArtistName = $temp.artist_name
-            [string]$script:CopyrightText = $temp.copyright_text
+        if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_remover_vars.json" -PathType Leaf) -eq $true){
+            $JSON = Get-Content -LiteralPath "$($PSScriptRoot)\exif_remover_vars.json" -Raw -Encoding UTF8 | ConvertFrom-JSON
+            $JSON | Out-Null
+
+            [string]$script:ArtistName = $JSON.artist_name
+            [string]$script:CopyrightText = $JSON.copyright_text
         }else{
             try{
                 [string]$script:ArtistName = Read-Host "Enter artist name here`t"
