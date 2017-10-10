@@ -4,6 +4,9 @@
 ## _fortryingoutloud
 Just a few (old) tests I like to keep around.
 
+## automount:smb.ps1
+Automount SMB-shares (to circumvent the inability to browse after disabling SMBv1).
+
 ## catalog_backup
 For backing up picture catalogs.
 
