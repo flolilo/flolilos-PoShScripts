@@ -139,6 +139,23 @@ if((Read-Host "Remove Adobe Bridge CS6 from context menu?") -eq 1){
     }
 }
 
+# DEFINITION: Remove "open with GitKraken"
+# CREDIT: https://stackoverflow.com/a/46667564/8013879
+if((Read-Host "Remove GitKraken from context menu?") -eq 1){
+    Write-Host "Remove GitKraken from context menu..." -ForegroundColor Cyan
+    [string]$regpath = "HKCR:\Directory\Background\shell\GitKraken"
+    if(Test-Path -Path $regpath){
+        try{
+            Remove-Item -Path $regpath -Recurse -Verbose:$wantverbose -WhatIf:$wantwhatif
+            Write-Host "Deleted $regpath" -ForegroundColor DarkGreen
+        }catch{
+            Write-Host "Could not delete $regpath" -ForegroundColor Red
+        }
+    }else{
+        Write-Host "Could not find $regpath" -ForegroundColor Magenta
+    }
+}
+
 
 Write-Host "Done!" -ForegroundColor Green
 Remove-PSDrive -Name HKCR  -Verbose:$wantverbose -WhatIf:$false
