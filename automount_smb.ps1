@@ -44,14 +44,15 @@ $uservars = $JSONFile | ForEach-Object {
     $cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $uservars.user, $uservars.password
     New-PSDrive -Name "Z" -Root $uservars.shares[0] -PSProvider FileSystem -Persist:$true -Credential $cred -Verbose
 #>
-
-for($i=0; $i -lt $uservars.shares.Length; $i++){
-    if((Test-Path -Path $uservars.shares[$i] -PathType Container -ErrorAction SilentlyContinue) -eq $false){
-        Write-Host "Cannot find $($uservars.shares[$i])." -ForegroundColor DarkRed
-        Start-Sleep -Seconds 2
-        $uservars.shares = $uservars.shares | Where-Object {$_ -ne $uservars.shares[$i]}
+<#
+    for($i=0; $i -lt $uservars.shares.Length; $i++){
+        if((Test-Path -Path $uservars.shares[$i] -PathType Container -ErrorAction SilentlyContinue) -eq $false){
+            Write-Host "Cannot find $($uservars.shares[$i])." -ForegroundColor DarkRed
+            Start-Sleep -Seconds 2
+            $uservars.shares = $uservars.shares | Where-Object {$_ -ne $uservars.shares[$i]}
+        }
     }
-}
+#>
 
 [int]$j=0
 for($i=0; $i -lt $alphabet.Length -and $j -lt $uservars.shares.Length; $i++){
