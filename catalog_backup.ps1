@@ -3,42 +3,40 @@
 <#
     .SYNOPSIS
         Script to back up/sync catalog(s) of Phase One's Capture One and Adobe's Lightroom.
-
     .DESCRIPTION
         Using 7z to fastly archive the catalog(s) to the backup-location, using robocopy to download the archive from the backup-location.
+    .NOTES
+        Version:        0.4
+        Author:         flolilo
+        Creation Date:  2017-10-24
 
     .INPUTS
-        (optional) catalog_backup.txt (encoded in UTF8)
+        (optional) catalog_backup_vars.json (encoded in UTF8).
     .OUTPUTS
-        None
-
-    .NOTES
-        Version:        0.3
-        Author:         flolilo
-        Creation Date:  2017-09-08
+        None.
 
     .PARAMETER upDown
         Defines if catalogs will be backed up or if backup will be restored. Choice: "up" or "down".
     .PARAMETER toProcess
-        Which catalog(s) are to process. Choice: LR, C1, or both ("LR","C1")
+        Which catalog(s) are to process. Choice: LR, C1, or both ("LR","C1").
     .PARAMETER LR_path
-        Path to Lightroom's catalog
+        Path to Lightroom's catalog. LR's default catalog path is in your Picture-library, "Lightroom".
     .PARAMETER C1_path
-        Path to Capture One's catalog
+        Path to Capture One's catalog. C1's default catalog path is in your Picture-library, "Capture One Catalogs".
     .PARAMETER server_path
-        Path to backup location
+        Path to backup location.
     .PARAMETER 7zipexe
-        Path to 7z.exe
+        Path to 7z.exe.
     .PARAMETER 7z_up_prefix
-        Beginning of 7zip command code (upstream)
+        Beginning of 7zip command code (upstream).
     .PARAMETER 7z_up_suffix
-        Ending of 7z command code (upstream)
+        Ending of 7z command code (upstream).
     .PARAMETER 7z_down_prefix
-        Beginning of 7zip command code (downstream)
+        Beginning of 7zip command code (downstream).
     .PARAMETER 7z_down_suffix
-        Ending of 7z command code (downstream)
+        Ending of 7z command code (downstream).
     .PARAMETER rc_switches
-        Robocopy command code switches
+        Robocopy command code switches.
     .PARAMETER backup_existing
         When -upDown "down" is specified, back up existing catalog(s) to an archive. 1 enables, 0 disables.
     .PARAMETER Delete
@@ -59,18 +57,12 @@ param(
     [string]$7z_down_prefix="x -aoa -bb0 -pdefault -sccUTF-8 -spf2",
     [string]$7z_down_suffix="",
     [int]$backup_existing=-1,
-    [int]$Delete=-1
+    [int]$Delete=-1,
+    [int]$Debug=0
 )
 
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
-# Checking if PoshRSJob is installed:
-if (-not (Get-Module -ListAvailable -Name PoshRSJob)){
-    Write-ColorOut "Module RSJob (https://github.com/proxb/PoshRSJob) is required, but it seemingly isn't installed - please start PowerShell as administrator and run`t" -ForegroundColor Red
-    Write-ColorOut "Install-Module -Name PoshRSJob" -ForegroundColor DarkYellow
-    Pause
-    Exit
-}
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -135,6 +127,13 @@ Function Write-ColorOut(){
     }
 }
 
+
+# ==================================================================================================
+# ==============================================================================
+#   Defining Functions:
+# ==============================================================================
+# ==================================================================================================
+
 # DEFINITION: For the auditory experience:
 Function Start-Sound($success){
     <#
@@ -161,6 +160,7 @@ Function Start-Sound($success){
     }
     $sound.Play()
 }
+
 
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
@@ -189,26 +189,40 @@ Function Get-UserValues(){
         }
     }
     if(("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0) -or ("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0) -or $script:server_path.Length -eq 0){
-        if((Test-Path -LiteralPath "$($PSScriptRoot)\catalog_backup.txt" -PathType Leaf)){
-            $temp = Get-Content -LiteralPath "$($PSScriptRoot)\catalog_backup.txt" -Raw -Encoding UTF8 | ConvertFrom-StringData
+        if((Test-Path -LiteralPath "$($PSScriptRoot)\catalog_backup_vars.json" -PathType Leaf)){
+            $JSON = Get-Content -LiteralPath "$($PSScriptRoot)\catalog_backup_vars.json" -Raw -Encoding UTF8 | ConvertFrom-JSON
+            $JSON | Out-Null
+
             if("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0){
-                $script:LR_path = $temp.LR_path
+                $script:LR_path = $JSON.LR_path
             }
             if("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0){
-                $script:C1_path = $temp.C1_path
+                $script:C1_path = $JSON.C1_path
             }
             if($script:server_path.Length -eq 0){
-                $script:server_path = $temp.server_path
+                $script:server_path = $JSON.server_path
             }
         }else{
             if("lr" -in $script:toProcess -and $script:LR_path.Length -eq 0){
-                try{[string]$script:LR_path = Read-Host "Enter path to LR's catalog"}catch{continue}
+                try{
+                    [string]$script:LR_path = Read-Host "Enter path to LR's catalog. If you're confused: LR's default catalog path is $([Environment]::GetFolderPath("MyPictures"))\Lightroom.`t"
+                }catch{
+                    continue
+                }
             }
             if("c1" -in $script:toProcess -and $script:C1_path.Length -eq 0){
-                try{[string]$script:C1_path = Read-Host "Enter path to C1's catalog"}catch{continue}
+                try{
+                    [string]$script:C1_path = Read-Host "Enter path to C1's catalog. If you're confused: C1's default catalog path is $([Environment]::GetFolderPath("MyPictures"))\Capture One Catalogs.`t"
+                }catch{
+                    continue
+                }
             }
             if($script:server_path.Length -eq 0){
-                try{[string]$script:server_path = Read-Host "Enter backup-path"}catch{continue}
+                try{
+                    [string]$script:server_path = Read-Host "Enter backup-path"
+                }catch{
+                    continue
+                }
             }
         }
     }
@@ -324,13 +338,15 @@ Function Start-Download(){
 }
 
 Function Start-Everything(){
-    Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
-        while($true){
-            $MyShell = New-Object -com "Wscript.Shell"
-            $MyShell.sendkeys("{F15}")
-            Start-Sleep -Seconds 300
+    if((Test-Path -Path "$($PSScriptRoot)\preventsleep.ps1" -PathType Leaf) -eq $true){
+        $preventstandbyid = (Start-Process powershell -ArgumentList "$($PSScriptRoot)\preventsleep.ps1 -Mode none -Shutdown 0" -WindowStyle Hidden -PassThru).Id
+        if($script:Debug -gt 0){
+            Write-ColorOut "preventsleep-ID is $preventstandbyid" -ForegroundColor Magenta -BackgroundColor DarkGray
         }
-    } | Out-Null
+    }else{
+        Write-Host "Couldn't find .\preventsleep.ps1, so can't prevent standby." -ForegroundColor Magenta
+        Start-Sleep -Seconds 3
+    }
 
     Get-UserValues
 
@@ -349,10 +365,7 @@ Function Start-Everything(){
         }
     }
 
-    # DEFINITION: clean up:
-    Get-RSJob | Stop-RSJob
-    Start-Sleep -Milliseconds 5
-    Get-RSJob | Remove-RSJob
+    Stop-Process -Id $preventstandbyid
 
     Start-Sound(1)
     Pause
