@@ -46,23 +46,30 @@
         catalog_backup.ps1 -upDown "up" -toProcess "C1" -Delete 1
 #>
 param(
-    [string]$upDown="define",
-    [array]$toProcess=@(),
-    [string]$LR_path="",
-    [string]$C1_path="",
-    [string]$server_path="",
-    [string]$7zipexe="C:\Program Files\7-Zip\7z.exe",
-    [string]$7z_up_prefix="a -t7z -m0=Copy -mx0 -ms=off -ssw -sccUTF-8 -bb0",
-    [string]$7z_up_suffix=" -x!Backup",
-    [string]$7z_down_prefix="x -aoa -bb0 -pdefault -sccUTF-8 -spf2",
-    [string]$7z_down_suffix="",
-    [int]$backup_existing=-1,
-    [int]$Delete=-1,
-    [int]$Debug=0
+    [string]$upDown =           "define",
+    [array]$toProcess =         @(),
+    [string]$LR_path =          "",
+    [string]$C1_path =          "",
+    [string]$server_path =      "",
+    [string]$7zipexe =          "C:\Program Files\7-Zip\7z.exe",
+    [string]$7z_up_prefix =     "a -t7z -m0=Copy -mx0 -ms=off -ssw -sccUTF-8 -bb0",
+    [string]$7z_up_suffix =     " -x!Backup",
+    [string]$7z_down_prefix =   "x -aoa -bb0 -pdefault -sccUTF-8 -spf2",
+    [string]$7z_down_suffix =   "",
+    [int]$backup_existing =     -1,
+    [int]$Delete =              -1,
+    [int]$Debug =               0
 )
 
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -72,26 +79,29 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2017-10-30
         
         .PARAMETER Object
-            String to write out
+            String to write out. Mandatory, but will take every non-parametised value.
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+        .PARAMETER Indentation
+            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -103,7 +113,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -127,40 +137,47 @@ Function Write-ColorOut(){
     }
 }
 
-
-# ==================================================================================================
-# ==============================================================================
-#   Defining Functions:
-# ==============================================================================
-# ==================================================================================================
-
 # DEFINITION: For the auditory experience:
-Function Start-Sound($success){
+Function Start-Sound(){
     <#
         .SYNOPSIS
             Gives auditive feedback for fails and successes
-        
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
-
         .NOTES
-            Date: 2018-08-22
+            Date: 2018-10-25
 
-        .PARAMETER success
-            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
         
         .EXAMPLE
-            For success: Start-Sound(1)
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
     #>
-    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
-    if($success -eq 1){
-        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
-    }else{
-        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$Success
+    )
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
     }
-    $sound.Play()
 }
 
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
@@ -262,7 +279,7 @@ Function Start-Upload(){
 
     if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
-        Start-Sound(0)
+        Start-Sound -Success 0
         Start-Sleep -Seconds 5
         Exit
     }else{
@@ -289,7 +306,7 @@ Function Start-Download(){
     
     if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
-        Start-Sound(0)
+        Start-Sound -Success 0
         Start-Sleep -Seconds 5
         Exit
     }else{
@@ -333,7 +350,9 @@ Function Start-Download(){
         Get-ChildItem -Path $Catalog_Path -Recurse -Directory | Remove-Item -Confirm:$confirm -Recurse
 
         Write-ColorOut "Starting Copying..." -ForegroundColor Cyan
-        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$Catalog_Path`" $script:7z_down_suffix" -NoNewWindow -Wait
+        # DEFINITION: $inter tries to prevent dooubling up of catalog-path (e.g. catc1/catc1/ instead of catc1/)
+        $inter = Split-Path -Path $Catalog_Path -Parent
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$inter`" $script:7z_down_suffix" -NoNewWindow -Wait
     }
 }
 
@@ -367,7 +386,7 @@ Function Start-Everything(){
 
     Stop-Process -Id $preventstandbyid
 
-    Start-Sound(1)
+    Start-Sound -Success 1
     Pause
 }
 
