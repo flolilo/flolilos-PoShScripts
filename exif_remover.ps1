@@ -6,9 +6,9 @@
     .DESCRIPTION
         Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
     .NOTES
-        Version:        1.4
+        Version:        1.5
         Author:         flolilo
-        Creation Date:  2017-10-10
+        Creation Date:  2017-10-31
 
     .INPUTS
         exiftool.exe
@@ -35,18 +35,27 @@
         exit_remover -AddCopyright 1 -ArtistName "John Doe" -CopyrightText "2017, by John Doe. -Encoder "C:\exiftool.exe"
 #>
 param(
-    [string]$InputPath = "$((Get-Location).Path)",
-    [switch]$AddCopyright = $false,
-    [string]$ArtistName = "",
-    [string]$CopyrightText = "",
+    [string]$InputPath =        "$((Get-Location).Path)",
+    [switch]$AddCopyright =     $false,
+    [string]$ArtistName =       "",
+    [string]$CopyrightText =    "",
     [ValidateRange(1,128)]
-    [int]$ThreadCount = 8,
-    [string]$Encoder = "$($PSScriptRoot)\exiftool.exe",
-    [switch]$ShowValues = $false
+    [int]$ThreadCount =         8,
+    [string]$Encoder =          "$($PSScriptRoot)\exiftool.exe",
+    [switch]$ShowValues =       $false
 )
 
-# Get all error-outputs in English:
+# DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -56,26 +65,29 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2017-10-30
         
         .PARAMETER Object
-            String to write out
+            String to write out. Mandatory, but will take every non-parametised value.
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+        .PARAMETER Indentation
+            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -87,7 +99,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -112,21 +124,27 @@ Function Write-ColorOut(){
 }
 
 # DEFINITION: For the auditory experience:
-Function Start-Sound($Success){
+Function Start-Sound(){
     <#
         .SYNOPSIS
             Gives auditive feedback for fails and successes
         .DESCRIPTION
-            Uses SoundPlayer and Windows's own WAVs to play sounds
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
         .NOTES
-            Date: 2018-08-22
+            Date: 2018-10-25
 
-        .PARAMETER success
-            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
         
         .EXAMPLE
-            For success: Start-Sound(1)
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
     #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$Success
+    )
     try{
         $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
         if($Success -eq 1){
@@ -136,14 +154,14 @@ Function Start-Sound($Success){
         }
         $sound.Play()
     }catch{
-        Write-Host "`a"
+        Write-Output "`a"
     }
 }
 
 
 # ==================================================================================================
 # ==============================================================================
-#   Defining Functions:
+#    Defining specific functions:
 # ==============================================================================
 # ==================================================================================================
 
@@ -174,7 +192,7 @@ Function Get-UserValues(){
     if((Test-Path -LiteralPath $script:Encoder -PathType Leaf) -eq $false){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $false){
             Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red
-            Start-Sound(0)
+            Start-Sound -Success 0
             Exit
         }else{
             [string]$script:Encoder = "$($PSScriptRoot)\exiftool.exe"
@@ -281,7 +299,7 @@ Function Start-Everything(){
         }
 
         Write-ColorOut "Done!" -ForegroundColor Green
-        Start-Sound(1)
+        Start-Sound -Success 1
         if((Read-Host "Show files?") -gt 0){
             foreach($i in $inputfiles.FullName){
                 Write-ColorOut $i -ForegroundColor Gray
@@ -290,7 +308,7 @@ Function Start-Everything(){
 
     }else{
         Write-ColorOut "Path not found - aborting!" -ForegroundColor Red
-        Start-Sound(0)
+        Start-Sound -Success 0
         Exit
     }
 }

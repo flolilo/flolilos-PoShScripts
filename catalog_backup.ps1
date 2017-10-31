@@ -61,8 +61,10 @@ param(
     [int]$Debug =               0
 )
 
-# Get all error-outputs in English:
+# DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 
 
 # ==================================================================================================

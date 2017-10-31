@@ -1,4 +1,6 @@
-param([string]$InPath)
+param(
+    [string]$InPath
+)
 
 #DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -typename System.Text.UTF8Encoding

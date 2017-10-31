@@ -55,11 +55,17 @@ Change behavior of a double-click on `.ps1`-files in Windows Explorer
 ## preventsleep
 Prevent the computer from going to standby - options for forever, certain CPU threshold, running processes.
 
+## processperformance
+Cannot remember - that's why it's important to document everything!
+
 ## remove_registry_entries
 Remove some unnecessary context menu entries. **Could quite possibly damage your system, so be careful!**
 
 ## remove_win10_apps
 Ask user which unnecessary apps to uninstall. **Could quite possibly damage your system, so be careful!**
+
+## robocopy-gui
+**Not complete!** Attempt to create a GUI for robocopy.
 
 ## security-cam_gui
 Re-encode file from the SD-card of the main station of security cams (with FFmpeg.)
@@ -69,3 +75,9 @@ Split a (quadscreen-)video into parts with FFmpeg.
 
 ## transcodetomp3
 Transcode files that are not MP3 to MP3 with FFmpeg.
+
+## treecmd
+Powershell-implementation of "tree".
+
+## wakeonlan
+Wakes server(s) up if they are not yet running.

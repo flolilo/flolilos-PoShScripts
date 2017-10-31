@@ -10,15 +10,15 @@
         This script will look forfiles with non-ASCII characters and rename them and then will move orphaned files up one folder at a time.
 
     .NOTES
-        Version:        1.2
+        Version:        1.3
         Author:         flolilo
-        Creation Date:  2017-09-09
+        Creation Date:  2017-10-31
         Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
         applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
         on the WWW). However, some parts are copies or modifications of very genuine code - see
         the "CREDIT:"-tags to find them.
 
-    .PARAMETER paraInput
+    .PARAMETER InputPath
         Path to your MP3s.
     .PARAMETER rename
         1 enables renaming to ASCII-standard, 0 disables.
@@ -33,18 +33,27 @@
         None.
 
     .EXAMPLE
-        .\foobar_datamover.ps1 -paraInput "D:\My Music" -rename 1 -move 1 -debug 0
+        .\foobar_datamover.ps1 -InputPath "D:\My Music" -rename 1 -move 1 -debug 0
 #>
 param(
-    [string]$paraInput = "D:\Temp\mp3_auto",
-    [int]$rename = 1,
-    [int]$move = 1,
+    [string]$InputPath = "D:\Temp\mp3_auto",
+    [int]$Renaming = 1,
+    [int]$Moving = 1,
     [int]$debug = 0
 )
 $WhatIfPreference = $(if($debug -eq 1){$true}else{$false})
 
-# Get all error-outputs in English:
+# DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -54,26 +63,29 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2017-10-30
         
         .PARAMETER Object
-            String to write out
+            String to write out. Mandatory, but will take every non-parametised value.
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+        .PARAMETER Indentation
+            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -85,7 +97,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -110,55 +122,68 @@ Function Write-ColorOut(){
 }
 
 # DEFINITION: For the auditory experience:
-Function Start-Sound($success){
+Function Start-Sound(){
     <#
         .SYNOPSIS
             Gives auditive feedback for fails and successes
-        
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
-
         .NOTES
-            Date: 2018-08-22
+            Date: 2018-10-25
 
-        .PARAMETER success
-            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
         
         .EXAMPLE
-            For success: Start-Sound(1)
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
     #>
-    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
-    if($success -eq 1){
-        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
-    }else{
-        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$Success
+    )
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
     }
-    $sound.Play()
 }
 
 
-if((Test-Path -Path $paraInput -PathType Container) -eq $false){
-    Write-ColorOut "FOLDER NON-EXISTENT!" -ForegroundColor Red
-    Start-Sleep -Seconds 2
-    Exit
-}
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
 
 Function Start-Replacing(){
     param(
-        [string]$userIn
+        [Parameter(Mandatory=($true))]
+        [string]$ToReplace
     )
 
-    $userIn = $userIn.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")")
+    $ToReplace = $ToReplace.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")")
 
-    return $userIn
+    return $ToReplace
 }
 
 Function Start-Renaming(){
+    param(
+        [Parameter(Mandatory=($true))]
+        [string]$ToRename
+    )
     [int]$errorcounter = 0
     [array]$artist = @()
     [array]$mp3 = @()
 
-    $artist = Get-ChildItem -Path $script:paraInput -Directory | ForEach-Object {
+    $artist = Get-ChildItem -Path $ToRename -Directory | ForEach-Object {
         [PSCustomObject]@{
             FullName = $_.FullName
             BaseName = $_.BaseName
@@ -172,7 +197,7 @@ Function Start-Renaming(){
             })
         }
     }
-    $mp3 = Get-ChildItem -Path $script:paraInput -Filter "*.mp3" -File -Recurse | ForEach-Object {
+    $mp3 = Get-ChildItem -Path $ToRename -Filter "*.mp3" -File -Recurse | ForEach-Object {
         [PSCustomObject]@{
             FullName = $_.FullName
             BaseName = $_.BaseName
@@ -193,7 +218,7 @@ Function Start-Renaming(){
     for($i=0; $i -lt $mp3.Length; $i++){
         [string]$old_mp3 = $mp3[$i].BaseName
         $old_mp3 += $mp3[$i].Extension
-        [string]$new_mp3 = Start-Replacing $mp3[$i].BaseName
+        [string]$new_mp3 = Start-Replacing -ToReplace $mp3[$i].BaseName
         $new_mp3 += $mp3[$i].Extension
         if($new_mp3 -notlike $old_mp3){
             Write-ColorOut "`"$old_mp3`"`t`t-> `"$new_mp3`"" -ForegroundColor Gray
@@ -214,7 +239,7 @@ Function Start-Renaming(){
     for($i=0; $i -lt $artist.Length; $i++){
         for($j=0; $j -lt $artist[$i].album.Length; $j++){
             $old_album = $artist[$i].album[$j].BaseName
-            $new_album = Start-Replacing $artist[$i].album[$j].BaseName
+            $new_album = Start-Replacing -ToReplace $artist[$i].album[$j].BaseName
             if($new_album -notlike $old_album){
                 Write-ColorOut "`"$old_album`"`t`t-> `"$new_album`"" -ForegroundColor Gray
                 try{
@@ -230,7 +255,7 @@ Function Start-Renaming(){
         }
         Start-Sleep -Milliseconds 25
         $old_artist = $artist[$i].BaseName
-        $new_artist = Start-Replacing $artist[$i].BaseName
+        $new_artist = Start-Replacing -ToReplace $artist[$i].BaseName
         if($new_artist -notlike $old_artist){
             Write-ColorOut "`"$old_artist`"`t`t-> `"$new_artist`"" -ForegroundColor Gray
             try{
@@ -248,7 +273,7 @@ Function Start-Renaming(){
 
     if($errorcounter -ne 0){
         Write-ColorOut "ERRORS ENCOUNTERED!" -ForegroundColor Magenta
-        Start-Sound(0)
+        Start-Sound -Success 0
         Start-Sleep -Seconds 15
         # return $false
     }else{
@@ -258,6 +283,10 @@ Function Start-Renaming(){
 }
 
 Function Start-Moving(){
+    param(
+        [Parameter(Mandatory=($true))]
+        [string]$ToMove
+    )
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy - HH:mm") - Moving files..." -ForegroundColor Cyan
     [int]$errorcounter = 0
     [int]$changecounter = 100
@@ -272,7 +301,7 @@ Function Start-Moving(){
         [array]$album_mp3 = @()
         Write-ColorOut "`r`nLoop $loop" -ForegroundColor Cyan
 
-        $artist = Get-ChildItem -Path $script:paraInput -Directory | ForEach-Object {
+        $artist = Get-ChildItem -Path $ToMove -Directory | ForEach-Object {
             [PSCustomObject]@{
                 FullName = $_.FullName
                 BaseName = $_.BaseName
@@ -380,7 +409,7 @@ Function Start-Moving(){
 
     if($errorcounter -ne 0){
         Write-ColorOut "ERRORS ENCOUNTERED!" -ForegroundColor Magenta
-        Start-Sound(0)
+        Start-Sound -Success 0
         Start-Sleep -Seconds 15
         # return $false
     }else{
@@ -389,13 +418,21 @@ Function Start-Moving(){
     }
 }
 
-if($rename -eq 1){
-    Start-Renaming
-}
-if($move -eq 1){
-    Start-Moving
+Function Start-Everything(){
+    if((Test-Path -Path $script:InputPath -PathType Container) -eq $false){
+        Write-ColorOut "FOLDER NON-EXISTENT!" -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        Exit
+    }
+    if($script:Renaming -eq 1){
+        Start-Renaming -ToRename $script:InputPath
+    }
+    if($script:Moving -eq 1){
+        Start-Moving -ToMove $script:InputPath
+    }
+    Write-ColorOut "`r`nDONE!" -ForegroundColor Green
+    Start-Sound -Success 1
+    Pause
 }
 
-Write-ColorOut "`r`nDONE!" -ForegroundColor Green
-Start-Sound(1)
-Pause
+Start-Everything
