@@ -6,16 +6,29 @@
     .DESCRIPTION
         Use "net use" to connect shares that are specified in a JSON-file.
     .NOTES
-        Version:    1.0
-        Date:       2017-10-10
+        Version:    1.1
+        Date:       2017-10-31
         Author:     flolilo
         Note:       Script is free to use - no warranties, user is responsible for any effect the script has.
 
     .INPUTS
-        automount_smb_vars.json (UTF-8 encoded).
-            Variables: user: "domain\\user", password, shares: [1st,2nd,...]
+        automount_smb_vars.json (UTF-8 encoded):
+        {
+            "presetname": "foobar",
+            "settings": {
+                "username": "users\\foobar",
+                "shares": [
+                    "\\\\192.168.0.2\\foobar",
+                    "\\\\10.0.0.20\\foobar",
+                ]
+            }
+        }
+        you can add "password" in "settings" if you want to, then include it in the ForEach-Object command.
 #>
-
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$user
+)
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
@@ -33,11 +46,12 @@ try{
 }
 $JSONFile | Out-Null
 
-$uservars = $JSONFile | ForEach-Object {
+$uservars = $JSONFile | Where-Object {$_.presetname -eq $user} | ForEach-Object {
     [PSCustomObject]@{
-        user = $_.user
-        password = $_.password # | ConvertTo-SecureString -AsPlainText -Force # CREDIT: https://stackoverflow.com/a/6240319/8013879
-        shares = @($_.shares)
+        user = $_.settings.username
+        password = Read-Host "Enter your password, please`t"
+        # password = $_.settings.password # | ConvertTo-SecureString -AsPlainText -Force # CREDIT: https://stackoverflow.com/a/6240319/8013879
+        shares = @($_.settings.shares)
     }
 }
 <# DEFINITION: Trying to merge in New-PSDrive
