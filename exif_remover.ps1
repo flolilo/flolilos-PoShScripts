@@ -36,14 +36,16 @@
 #>
 param(
     [string]$InputPath =        "$((Get-Location).Path)",
-    [switch]$AddCopyright =     $false,
+    [int]$AddCopyright =        0,
     [string]$ArtistName =       "",
     [string]$CopyrightText =    "",
     [ValidateRange(1,128)]
     [int]$ThreadCount =         8,
     [string]$Encoder =          "$($PSScriptRoot)\exiftool.exe",
-    [switch]$ShowValues =       $false
+    [int]$ShowValues =          0
 )
+[switch]$AddCopyright = $(if($AddCopyright -eq 1){$true}else{$false})
+[switch]$ShowValues = $(if($ShowValues -eq 1){$true}else{$false})
 
 # DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -210,7 +212,7 @@ Function Search-Files(){
 
     [array]$files_in = @()
     [int]$counter = 1
-    $files_in = @(Get-ChildItem -LiteralPath $InPath -Include *.jpg,*.jpeg | ForEach-Object {
+    $files_in = @(Get-ChildItem -Path $InPath\* -Include "*.jpg","*.jpeg" | ForEach-Object {
         if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
             Write-Progress -Activity "Searching JP(E)Gs..." -Status "$($counter) - $($_.BaseName)" -PercentComplete -1
             $sw.Reset()
@@ -291,7 +293,13 @@ Function Start-Everything(){
         Exit
     }
     if((Test-Path -LiteralPath $script:InputPath -PathType Container) -eq $true){
-        [array]$inputfiles = Search-Files -InPath $script:InputPath
+        [array]$inputfiles = @(Search-Files -InPath $script:InputPath)
+        if($inputfiles.Length -eq 0){
+            Write-ColorOut "No files found - aborting!" -ForegroundColor Magenta
+            Start-Sound -Success 0
+            Start-Sleep -Seconds 5
+            Exit
+        }
         Remove-EXIF -InFiles $inputfiles
         if($script:AddCopyright -eq $true){
             Start-Sleep -Milliseconds 100
