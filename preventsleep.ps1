@@ -64,6 +64,13 @@ $OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 # Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
+
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
     <#
@@ -72,26 +79,29 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2017-10-30
         
         .PARAMETER Object
-            String to write out
+            String to write out. Mandatory, but will take every non-parametised value.
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+        .PARAMETER Indentation
+            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
         [Parameter(Mandatory=$true)]
         [string]$Object,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -103,7 +113,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -128,19 +138,25 @@ Function Write-ColorOut(){
 }
 
 
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
+
 # DEFINITION: Get variables if not properly specified:
 Function Get-UserVars(){
     if($script:Mode -ne "process" -and $script:Mode -ne "cpu" -and $script:Mode -ne "none"){
-        Write-ColorOut "Which condition should end the script? // Welche Bedingung soll das Skript beenden?" -ForegroundColor Gray
-        Write-ColorOut "`t`"cpu`"`t=`tCPU-usage falls below specified threshold. // CPU-Nutzung faellt unter angegebenes Limit." -ForegroundColor DarkGray
-        Write-ColorOut "`t`"process`"`t=`tSpecified process is no longer running. // Angegebener Prozess laeuft nicht mehr." -ForegroundColor DarkGray
-        Write-ColorOut "`t`"none`"`t=`tEndless action. // Laeuft ewig." -ForegroundColor DarkGray
+        Write-ColorOut "Which condition should end the script? // Welche Bedingung soll das Skript beenden?" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "`"cpu`"`t=`tCPU-usage falls below specified threshold. // CPU-Nutzung faellt unter angegebenes Limit." -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "`"process`"`t=`tSpecified process is no longer running. // Angegebener Prozess laeuft nicht mehr." -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "`"none`"`t=`tEndless action. // Laeuft ewig." -ForegroundColor DarkGray -Indentation 4
         while($true){
-            [string]$script:Mode = Read-Host "Enter mode: // Modus eingeben:`t"
+            [string]$script:Mode = Read-Host "    Enter mode: // Modus eingeben:`t"
             if($script:Mode -eq "cpu" -or $script:Mode -eq "process" -or $script:Mode -eq "none"){
                 break
             }else{
-                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta -Indentation 4
                 continue
             }
         }
@@ -154,7 +170,7 @@ Function Get-UserVars(){
                 if($script:CPUthresh -in (2..99)){
                     break
                 }else{
-                    Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                    Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta -Indentation 4
                     continue
                 }
             }
@@ -167,12 +183,12 @@ Function Get-UserVars(){
                 if($processCount -in (1..100)){
                     break
                 }else{
-                    Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                    Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta -Indentation 4
                     continue
                 }
             }
             for($i=0; $i -lt $processCount; $i++){
-                Write-ColorOut "Please specify name of process # $($i + 1): // Bitte Namen von Prozess # $($i + 1) eingeben:`t" -ForegroundColor Gray -NoNewline
+                Write-ColorOut "Please specify name of process # $($i + 1): // Bitte Namen von Prozess # $($i + 1) eingeben:`t" -ForegroundColor Gray -NoNewline -Indentation 4
                 [array]$script:Process += Read-Host 
             }
         }
@@ -190,7 +206,7 @@ Function Get-UserVars(){
             if($script:Shutdown -in (0..1)){
                 break
             }else{
-                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta
+                Write-ColorOut "Invalid choice, please try again. // Ungueltige Angabe, bitte erneut versuchen." -ForegroundColor Magenta -Indentation 4
                 continue
             }
         }
@@ -262,7 +278,7 @@ Function Start-Shutdown(){
 # DEFINITION: Start it:
 Function Start-Everything(){
     Write-ColorOut "flolilo's Preventsleep-Script v2.0 // flolilos Schlaf-Verhinder-Skript v2.0" -ForegroundColor DarkCyan -BackgroundColor Gray
-    Write-ColorOut "This script prevents the computer from hibernating. // Dieses Skript hindert den Computer am Standby-Wechsel." -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "This script prevents the computer from hibernating. // Dieses Skript hindert den Computer am Standby-Wechsel." -ForegroundColor DarkCyan -BackgroundColor Gray -Indentation 4
     Write-ColorOut "Do not close this window if a script opened it! // Dieses Fenster nicht schliessen falls es von einem Prozess geoeffnet wurde!" -ForegroundColor Red -BackgroundColor White
     Write-ColorOut "Process-ID of this script is: // Prozess-ID dieses Skripts ist:`t" -NoNewLine -ForegroundColor Cyan
     Write-ColorOut "$PID`r`n" -ForegroundColor Magenta
