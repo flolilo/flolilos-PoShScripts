@@ -12,7 +12,7 @@
 
     .INPUTS
         exiftool.exe
-        (optional) exif_remover_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters).
+        (optional) exif_tool_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters).
     .OUTPUTS
         none.
 
@@ -20,6 +20,8 @@
         Path where images should be searched and edited (default: current path of console).
     .PARAMETER AddCopyright
         Enables or disables writing of copyright-information (specified with -ArtistName and -CopyrightText).
+    .PARAMETER PresetName
+        Name for preset that is taken from JSON. Default: "default".
     .PARAMETER ArtistName
         Name of artist.
     .PARAMETER CopyrightText
@@ -28,7 +30,7 @@
         How many exiftool-instances run simultaneously. Default: 8, Valid: 1-128.
     .PARAMETER Encoder
         Path to exiftool.exe.
-    .PARAMETER ShowValues
+    .PARAMETER OnlyShowValues
         Only show copyright-values.
 
     .EXAMPLE
@@ -37,15 +39,14 @@
 param(
     [string]$InputPath =        "$((Get-Location).Path)",
     [int]$AddCopyright =        0,
+    [string]$PresetName =       "default",
     [string]$ArtistName =       "",
     [string]$CopyrightText =    "",
     [ValidateRange(1,128)]
     [int]$ThreadCount =         8,
     [string]$Encoder =          "$($PSScriptRoot)\exiftool.exe",
-    [int]$ShowValues =          0
+    [int]$OnlyShowValues =      0
 )
-[switch]$AddCopyright = $(if($AddCopyright -eq 1){$true}else{$false})
-[switch]$ShowValues = $(if($ShowValues -eq 1){$true}else{$false})
 
 # DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -169,21 +170,30 @@ Function Start-Sound(){
 
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
-    if($script:AddCopyright -eq $true -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
-        if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_remover_vars.json" -PathType Leaf) -eq $true){
-            $JSON = Get-Content -LiteralPath "$($PSScriptRoot)\exif_remover_vars.json" -Raw -Encoding UTF8 | ConvertFrom-JSON
-            $JSON | Out-Null
+    Write-ColorOut "Getting user-values..." -ForegroundColor Cyan
+    if($script:AddCopyright -eq 1 -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
+        if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -PathType Leaf) -eq $true){
+            $JSON = Get-Content -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -Raw -Encoding UTF8 | ConvertFrom-JSON
+            if($script:PresetName -in $JSON.preset){
+                $JSON = $JSON | Where-Object {$_.preset -eq $script:PresetName}
+            }else{
+                Write-ColorOut "Could not find preset `"$script:PresetName`" - changed to `"default`"." -ForegroundColor Magenta -Indentation 4
+                $JSON = $JSON | Where-Object {$_.preset -eq "default"}
+            }
+            $JSON = $JSON.values
 
             [string]$script:ArtistName = $JSON.artist_name
             [string]$script:CopyrightText = $JSON.copyright_text
         }else{
             try{
-                [string]$script:ArtistName = Read-Host "Enter artist name here`t"
+                Write-ColorOut "Enter artist name here:`t" -NoNewLine -Indentation 4
+                [string]$script:ArtistName = Read-Host
             }catch{
                 continue
             }
             try{
-                [string]$script:CopyrightText = Read-Host "Enter copyright text here`t"
+                Write-ColorOut "Enter copyright text here:`t" -NoNewLine -Indentation 4
+                [string]$script:CopyrightText = Read-Host
             }catch{
                 continue
             }
@@ -193,8 +203,9 @@ Function Get-UserValues(){
     # DEFINITION: Search for exiftool:
     if((Test-Path -LiteralPath $script:Encoder -PathType Leaf) -eq $false){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $false){
-            Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red
+            Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red -Indentation 2
             Start-Sound -Success 0
+            Start-Sleep -Seconds 5
             Exit
         }else{
             [string]$script:Encoder = "$($PSScriptRoot)\exiftool.exe"
@@ -210,11 +221,12 @@ Function Search-Files(){
     )
     $sw = [diagnostics.stopwatch]::StartNew()
 
+    Write-ColorOut "Searching files..." -ForegroundColor Cyan
     [array]$files_in = @()
     [int]$counter = 1
     $files_in = @(Get-ChildItem -Path $InPath\* -Include "*.jpg","*.jpeg" | ForEach-Object {
         if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
-            Write-Progress -Activity "Searching JP(E)Gs..." -Status "$($counter) - $($_.BaseName)" -PercentComplete -1
+            Write-Progress -Activity "Searching JPEGs..." -Status "$($counter) - $($_.BaseName)" -PercentComplete -1
             $sw.Reset()
             $sw.Start()
         }
@@ -224,7 +236,7 @@ Function Search-Files(){
             BaseName = $_.BaseName
         }
     })
-    Write-Progress -Activity "Searching JP(E)Gs..." -Status "Done" -Completed
+    Write-Progress -Activity "Searching JPEGs..." -Status "Done" -Completed
 
     return $files_in
 }
@@ -237,6 +249,7 @@ Function Remove-EXIF(){
     )
     $sw = [diagnostics.stopwatch]::StartNew()
 
+    Write-ColorOut "Removing EXIFs..." -ForegroundColor Cyan
     for($i=0; $i -lt $InFiles.Length; $i++){
         if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
             Write-Progress -Activity "Deleting EXIFs..." -Status "$($i + 1)/$($InFiles.Length) - $($InFiles[$i].BaseName)" -PercentComplete ((($i + 1) / $InFiles.Length) * 100)
@@ -263,6 +276,7 @@ Function Add-EXIF(){
     )
     $sw = [diagnostics.stopwatch]::StartNew()
 
+    Write-ColorOut "Adding EXIFs..." -ForegroundColor Cyan
     for($i=0; $i -lt $InFiles.Length; $i++){
         if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
             Write-Progress -Activity "Adding Copyright..." -Status "$($i + 1)/$($InFiles.Length) - $($InFiles[$i].BaseName)" -PercentComplete ((($i + 1) / $InFiles.Length) * 100)
@@ -284,14 +298,16 @@ Function Add-EXIF(){
 
 # DEFINITION: Start everything:
 Function Start-Everything(){
+    Write-ColorOut "Welcome to flolilo's exif-tool!" -ForegroundColor DarkCyan -BackgroundColor Gray
+
     Get-UserValues
-    # DEFINITION: Show new EXIF values:
-    if($script:ShowValues -eq $true){
-        Write-ColorOut "Artist name:`t$script:ArtistName" -ForegroundColor Gray
-        Write-ColorOut "Copyright text:`t$script:CopyrightText" -ForegroundColor DarkGray
+    Write-ColorOut "Artist's name:`t$script:ArtistName" -ForegroundColor Gray -Indentation 4
+    Write-ColorOut "Copyright text:`t$script:CopyrightText" -ForegroundColor DarkGray -Indentation 4
+    if($script:OnlyShowValues -eq 1){
         Pause
         Exit
     }
+
     if((Test-Path -LiteralPath $script:InputPath -PathType Container) -eq $true){
         [array]$inputfiles = @(Search-Files -InPath $script:InputPath)
         if($inputfiles.Length -eq 0){
@@ -301,7 +317,7 @@ Function Start-Everything(){
             Exit
         }
         Remove-EXIF -InFiles $inputfiles
-        if($script:AddCopyright -eq $true){
+        if($script:AddCopyright -eq 1){
             Start-Sleep -Milliseconds 100
             Add-EXIF -InFiles $inputfiles
         }

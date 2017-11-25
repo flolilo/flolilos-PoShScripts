@@ -16,8 +16,8 @@ Easy-to-use tool to create difference videos via FFmpeg.
 ## cpuwatch
 Document the computer's CPU- and RAM-stats (into a CSV-file).
 
-## exif_remover
-Remove EXIF-entries in pictures (and re-add copyright information) via exiftool.
+## exif_tool
+Remove EXIF-entries in pictures (and re-add copyright information) via [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/).
 
 ## find_extensions
 Look for files with other extensions than the specified (helps at cleaning up)
