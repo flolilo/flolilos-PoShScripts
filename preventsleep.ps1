@@ -48,10 +48,8 @@
 param(
     [string]$Mode = "specify",
     [array]$Process = @(),
-
     [int]$CPUthresh = 0,
 
-    # DEFINITION:/CREDIT: https://superuser.com/a/1023836/703240
     [ValidateRange(10,3600)]
     [int]$TimeBase = 90,
 
@@ -146,7 +144,9 @@ Function Get-UserVars(){
                 continue
             }
         }
-    }elseif($script:Mode -eq "cpu"){
+    }
+
+    if($script:Mode -eq "cpu"){
         if($CPUthresh -notin (2..99)){
             while($true){
                 Write-ColorOut "Enter the CPU-threshold in %. (enter w/o %-sign) - Recommendation: 90% // Grenzwert der CPU-Auslastung in % angeben. (Angabe ohne %-Zeichen) Empfehlung: 90%`t" -ForegroundColor Gray -NoNewLine
@@ -181,7 +181,9 @@ Function Get-UserVars(){
         }else{
             [int]$script:PoShCompensation = 0
         }
-    }elseif($script:Mode -ne "none" -and $script:Shutdown -notin (0..1)){
+    }
+
+    if($script:Mode -ne "none" -and $script:Shutdown -notin (0..1)){
         while($true){
             Write-ColorOut "Shutdown when done? `"1`" for yes, `"0`" for no: // Nach Abschluss herunterfahren? `"1`" fuer Ja, `"0`" fuer Nein:`t" -ForegroundColor Gray -NoNewLine
             [int]$script:Shutdown = Read-Host
