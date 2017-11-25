@@ -32,6 +32,8 @@
         Path to exiftool.exe.
     .PARAMETER ShowValues
         Show copyright-values before adding them.
+    .PARAMETER Debug
+        Add a bit of verbose information about variables.
 
     .EXAMPLE
         exif_tool -AddCopyright 1 -ArtistName "John Doe" -CopyrightText "2017, by John Doe." -Encoder "C:\exiftool.exe"
@@ -46,14 +48,14 @@ param(
     [string]$ArtistName =       "",
     [string]$CopyrightText =    "",
     [string]$Encoder =          "$($PSScriptRoot)\exiftool.exe",
-    [int]$ShowValues =          0
+    [int]$ShowValues =          0,
+    [int]$Debug =               0
 )
 
 # DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
-
 
 # ==================================================================================================
 # ==============================================================================
@@ -257,11 +259,15 @@ Function Set-EXIF(){
         [string]$ArgumentList = " -EXIF:Software= -Photoshop:All= -Adobe:All= -IPTC:By-Line<IPTC:By-Line -IPTC:CopyrightNotice<IPTC:CopyrightNotice -IPTC:ObjectName<IPTC:ObjectName -IPTC:Keywords<IPTC:Keywords"
     }
     # Keep modified date, show progress, overwrite original files, process JP(E)Gs:
-    [string]$ArgumentList = $ArgumentList + " -P -progress -overwrite_original -ext jpg -ext jpeg `"$script:InPath\*`""
+    [string]$ArgumentList = $ArgumentList + " -P -progress -overwrite_original -ext jpg -ext jpeg `"$script:InputPath\*`""
+    if($script:Debug -eq 1){
+        Write-ColorOut "ArgumentList:`t$ArgumentList" -ForegroundColor DarkGray -Indentation 4
+        Pause
+    }
 
-    # Push-Location $script:InPath
+    Push-Location $script:InputPath
     Start-Process -FilePath $script:Encoder -ArgumentList $ArgumentList -NoNewWindow -Wait
-    # Pop-Location
+    Pop-Location
 }
 
 # DEFINITION: Start everything:
@@ -283,6 +289,17 @@ Function Start-Everything(){
             }
         }
     }
+    if($script:Debug -eq 1){
+        Write-ColorOut "InputPath:`t`t$script:InputPath" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "DeleteAllEXIF:`t$script:DeleteAllEXIF" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "AddCopyright:`t$script:AddCopyright" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "PresetName:`t`t$script:PresetName" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "ArtistName:`t`t$script:ArtistName" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "CopyrightText:`t$script:CopyrightText" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "Encoder:`t`t$script:Encoder" -ForegroundColor DarkGray -Indentation 4
+        Pause
+    }
+    
 
     if((Test-Path -LiteralPath $script:InputPath -PathType Container) -eq $true){
         Set-EXIF
