@@ -1,5 +1,5 @@
 param(
-    [string]$InPath
+    [string]$InPath = "$((Get-Location).Path)"
 )
 
 #DEFINITION: Hopefully avoiding errors by wrong encoding now:
