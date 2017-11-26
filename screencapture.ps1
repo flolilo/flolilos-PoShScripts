@@ -3,7 +3,7 @@ param(
     [ValidateScript({($_ % 2) -eq 0})]
     [int]$offset = 0,
     [ValidateRange(5,25)]
-    [int]$framerate = 15,
+    [int]$framerate = 10,
     [ValidateRange(0,1)]
     [int]$gif = 1
 )
@@ -18,7 +18,7 @@ if($gif -eq 0){
     Start-Process -FilePath ffmpeg -ArgumentList " -hide_banner -i F:\screencap_$date.mp4 -vf scale=1280:-2 -c:v libx264 -crf 22 -preset veryslow -profile:v high -level 4.2 -an F:\$($date)_webready.mp4" -NoNewWindow -Wait
 }else{
     # CREDIT: https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
-    Start-Process -FilePath ffmpeg -ArgumentList "-hide_banner -i F:\screencap_$date.mp4 -filter_complex `"scale=1280:-2:flags=lanczos,split[o1][o2];[o1]palettegen[p];[o2]fifo[o3];[o3][p]paletteuse=dither=none`" -b:v 400k -an -y F:\$($date)_webready.gif" -NoNewWindow -Wait
+    Start-Process -FilePath ffmpeg -ArgumentList "-hide_banner -i F:\screencap_$date.mp4 -filter_complex `"scale=1280:-2:flags=lanczos,split[o1][o2];[o1]palettegen[p];[o2]fifo[o3];[o3][p]paletteuse=dither=none`" -b:v 200k -an -y F:\$($date)_webready.gif" -NoNewWindow -Wait
 }
 Remove-Item -Path F:\screencap_$date.mp4
 
