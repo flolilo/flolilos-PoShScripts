@@ -58,6 +58,9 @@ Prevent the computer from going to standby - options for forever, certain CPU th
 ## processperformance
 Cannot remember - that's why it's important to document everything!
 
+## profile
+My profile-file.
+
 ## remove_registry_entries
 Remove some unnecessary context menu entries. **Could quite possibly damage your system, so be careful!**
 
