@@ -67,11 +67,17 @@ Ask user which unnecessary apps to uninstall. **Could quite possibly damage your
 ## robocopy-gui
 **Not complete!** Attempt to create a GUI for robocopy.
 
+## screencapture
+Capture your desktop, then render the video web-compliantly.
+
 ## security-cam_gui
 Re-encode file from the SD-card of the main station of security cams (with FFmpeg.)
 
 ## split-quadscreen
 Split a (quadscreen-)video into parts with FFmpeg.
+
+## tiftojpeg
+Use [imagemagick](https://www.imagemagick.org/) to convert TIFs to JPEGs - and save all metadata.
 
 ## transcodetomp3
 Transcode files that are not MP3 to MP3 with FFmpeg.
