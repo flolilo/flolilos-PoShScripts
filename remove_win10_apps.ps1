@@ -311,9 +311,15 @@ Function Set-Apps(){
     $Useless += 1
 
     <# TODO: won't work (Remove-AppxPackage : Deployment failed with HRESULT: 0x80073CFA)
-    $ClearName += "Mixed Reality Portal"
-    $AppName += "*HolographicFirstRun*"
-    $Useless += 1
+        $ClearName += "Miracast"
+        $AppName += "*MiracastView*"
+        $Useless += 0
+    #>
+
+    <# TODO: won't work (Remove-AppxPackage : Deployment failed with HRESULT: 0x80073CFA)
+        $ClearName += "Mixed Reality Portal"
+        $AppName += "*HolographicFirstRun*"
+        $Useless += 1
     #>
 
     $ClearName += "Money"
