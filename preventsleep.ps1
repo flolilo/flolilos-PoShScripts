@@ -217,10 +217,11 @@ Function Get-UserVars(){
 Function Get-ComputerStats(){
     [array]$cpu = @()
     for($i = 0; $i -lt 3; $i++){
-        $cpu += Get-WmiObject win32_processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average
+        $cpu += (Get-Counter "\Processor(_total)\% Processor Time").countersamples.cookedvalue
         Start-Sleep -Seconds 1
+        [int]$value = [math]::ceiling(($cpu | Measure-Object -Average | Select-Object -ExpandProperty Average))
     }
-    return ([math]::ceiling(($cpu[0] + $cpu[1] + $cpu[2]) / 3))
+    return $value
 }
 
 # DEFINITION: Iteration to prevent standby:
