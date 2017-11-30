@@ -1,14 +1,33 @@
 #requires -version 2
 
 <#
-    .NOTES
+    .SYNOPSIS
+        Ping and wake up server(s).
+    .DESCRIPTION
         CREDIT: wolcmd by https://www.depicus.com/wake-on-lan/wake-on-lan-cmd
+    .NOTES
+        Version:    1.1
+        Date:       2017-11-30
+        Author:     flolilo
 #>
+param(
+    [string]$InputFile =    "$($PSScriptRoot)\wakeonlan.json",
+    [string]$IPaddress = "",
+    [string]$MACaddress = "",
+    [string]$WOLcmdPath =   "C:\FFMPEG\binaries\WolCmd.exe"
+)
 
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -76,32 +95,76 @@ Function Write-ColorOut(){
     }
 }
 
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
+
 # DEFINITION: Get JSON values:
-try{
-    $JSON = Get-Content -Path "$($PSScriptRoot)\wakeonlan.json" -Raw -Encoding UTF8 | ConvertFrom-Json
-    $JSON | Out-Null
-    [array]$IPaddresses = $JSON.IPaddresses
-    [array]$MACaddresses = $JSON.MACaddresses
-    [string]$WOLcmdPath = $JSON.WOLcmdPath
-}catch{
-    Write-ColorOut "Failed to get $($PSScriptRoot)\wakeonlan.json - aborting!" -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    Exit
-}
-if((Test-Path -Path $WOLcmdPath -PathType Leaf) -eq $false){
-    Write-ColorOut "Cannot find $WOLcmdPath - aborting!" -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    Exit
-}
-
-
-for($i=0; $i -lt $IPaddresses.Length; $i++){
-    $MACaddresses[$i] = $MACaddresses[$i].Replace(":","")
-    if(Test-Connection $IPaddresses[$i] -buffer 16 -Count 2 -Quiet){
-        Write-ColorOut "Server $($i + 1)/$($IPaddresses.Length) already running!" -ForegroundColor Green
+Function Get-Values(){
+    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Finding values..." -ForegroundColor Cyan
+    [array]$script:WOL = @((0..100) | ForEach-Object {
+        [PSCustomObject]@{
+            Name = "ZYX"
+            MACaddress = "ZYX"
+            IPaddress = "ZYX"
+        }
+    })
+    if($script:IPaddress.Length -eq 0 -or $script:MACaddress.Length -eq 0){
+        try{
+            Test-Path -Path $script:InputFile -PathType Leaf -ErrorAction Stop
+            $inter = Get-Content -Path $script:InputFile -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
+            for($i=0; $i -lt $inter.Length; $i++){
+                $script:WOL[$i].Name = $inter[$i].Name
+                $script:WOL[$i].MACaddress = $inter[$i].MACaddress.Replace(":","")
+                $script:WOL[$i].IPaddress = $inter[$i].IPaddress
+            }
+        }catch{
+            Write-ColorOut "Failed to get $script:InputFile - aborting!" -ForegroundColor Red
+            Start-Sleep -Seconds 5
+            Exit
+        }
     }else{
-        Write-ColorOut "Server $($i + 1)/$($IPaddresses.Length) not running - waking up..." -ForegroundColor Yellow
-        Start-Process -FilePath $WOLcmdPath -ArgumentList "$($MACaddresses[$i]) $($IPaddresses[$i]) 255.255.255.0 7" -NoNewWindow -Wait
+        $script:WOL[0].Name = "UserServer"
+        $script:WOL[0].MACaddress = $script:MACaddress.Replace(":","")
+        $script:WOL[0].IPaddress = $script:IPaddress
     }
+
+    $script:WOL | Out-Null
+    $script:WOL = @($script:WOL | Where-Object {$_.Name -ne "ZYX" -and $_.IPaddress -ne "ZYX" -and $_.MACaddress -ne "ZYX"})
+    $script:WOL | Out-Null
+}
+
+# DEFINITION: Ping and WOL:
+Function Start-WOL(){
+    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Pinging/waking server(s)..." -ForegroundColor Cyan
+
+    for($i=0; $i -lt $script:WOL.Count; $i++){
+        Write-Progress -Activity "Pinging server(s)..." -Status "# $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`"" -PercentComplete $((($i + 1) * 100) / $script:WOL.Count)
+        if(Test-Connection -ComputerName $script:WOL[$i].IPaddress -Buffer 16 -TimeToLive 2 -Delay 1 -Count 2 -Quiet){
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" already running!" -ForegroundColor Green
+        }else{
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" not running - waking up..." -ForegroundColor Yellow
+            Start-Process -FilePath $script:WOLcmdPath -ArgumentList "$($script:WOL[$i].MACaddress) $($script:WOL[$i].IPaddress) 255.255.255.0 7" -NoNewWindow -Wait
+        }
+    }
+    Write-Progress -Activity "Pinging/waking server..." -Status "Done!" -Completed
+}
+
+Function Start-Everything(){
+    if((Test-Path -Path $script:WOLcmdPath -PathType Leaf) -eq $false){
+        Write-ColorOut "Cannot find $($script:WOLcmdPath) - aborting!" -ForegroundColor Red
+        Start-Sleep -Seconds 5
+        Exit
+    }
+
+    Get-Values
+    Start-WOL
+ 
+    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Done!" -ForegroundColor Green
     Start-Sleep -Milliseconds 500
 }
+
+Start-Everything
