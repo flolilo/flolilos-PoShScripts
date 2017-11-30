@@ -6,5 +6,5 @@
 *.xlsx
 *.json
 !exif_tool_vars.json
-!wakeonlan.json
+# !wakeonlan.json
 /movies/*
