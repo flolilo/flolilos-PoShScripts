@@ -18,7 +18,7 @@
 
     .PARAMETER InputPath
         Path where images should be searched and edited (default: current path of console).
-    .PARAMETER DeleteAllEXIF
+    .PARAMETER DeleteAllMeta
         Deleting all metadata or just some never used ones (like software).
     .PARAMETER AddCopyright
         Enables or disables writing of copyright-information (specified with -ArtistName and -CopyrightText).
@@ -41,7 +41,7 @@
 param(
     [string]$InputPath =        "$((Get-Location).Path)",
     [ValidateRange(0,1)]
-    [int]$DeleteAllEXIF =       0,
+    [int]$DeleteAllMeta =       0,
     [ValidateRange(0,1)]
     [int]$AddCopyright =        0,
     [string]$PresetName =       "default",
@@ -239,22 +239,22 @@ Function Set-EXIF(){
     # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html
     # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/IPTC.html
 
-    Write-ColorOut "$(Get-Date -Format "yy.MM.dd - HH:mm")  -" -NoNewLine -ForegroundColor Gray
+    Write-ColorOut "$(Get-Date -Format "yy.MM.dd - HH:mm:ss")  -" -NoNewLine -ForegroundColor Gray
     # DEFINITION: Write Arguments into string:
     [string]$ArgumentList = ""
-    if($script:DeleteAllEXIF -eq 1 -and $script:AddCopyright -eq 1){
+    if($script:DeleteAllMeta -eq 1 -and $script:AddCopyright -eq 1){
         Write-ColorOut "-  Delete all metadata, then add Copyright to EXIF and IPTC..." -ForegroundColor Cyan
         [string]$ArgumentList = " -All:All= -artist=`"$script:ArtistName`" -copyright=`"$script:CopyrightText`" -IPTC:By-Line=`"$script:ArtistName`" -IPTC:CopyrightNotice=`"$script:CopyrightText`""
     }
-    elseif($script:DeleteAllEXIF -eq 1 -and $script:AddCopyright -eq 0){
+    elseif($script:DeleteAllMeta -eq 1 -and $script:AddCopyright -eq 0){
         Write-ColorOut "-  Delete all metadata..." -ForegroundColor Cyan
         [string]$ArgumentList = " -All:All= -IPTC:By-Line<IPTC:By-Line -IPTC:CopyrightNotice<IPTC:CopyrightNotice -IPTC:ObjectName<IPTC:ObjectName -IPTC:Keywords<IPTC:Keywords"
     }
-    elseif($script:DeleteAllEXIF -eq 0 -and $script:AddCopyright -eq 1){
+    elseif($script:DeleteAllMeta -eq 0 -and $script:AddCopyright -eq 1){
         Write-ColorOut "-  Delete only software information, overwrite copyright in EXIF and IPTC..." -ForegroundColor Cyan
         [string]$ArgumentList = " -EXIF:Software= -Photoshop:All= -Adobe:All= -artist=`"$script:ArtistName`" -copyright=`"$script:CopyrightText`" -IPTC:By-Line=`"$script:ArtistName`" -IPTC:CopyrightNotice=`"$script:CopyrightText`" -IPTC:ObjectName<IPTC:ObjectName -IPTC:Keywords<IPTC:Keywords"
     }
-    elseif($script:DeleteAllEXIF -eq 0 -and $script:AddCopyright -eq 0){
+    elseif($script:DeleteAllMeta -eq 0 -and $script:AddCopyright -eq 0){
         Write-ColorOut "-  Delete only software information, re-add IPTC-tags..." -ForegroundColor Cyan
         [string]$ArgumentList = " -EXIF:Software= -Photoshop:All= -Adobe:All= -IPTC:By-Line<IPTC:By-Line -IPTC:CopyrightNotice<IPTC:CopyrightNotice -IPTC:ObjectName<IPTC:ObjectName -IPTC:Keywords<IPTC:Keywords"
     }
@@ -291,7 +291,7 @@ Function Start-Everything(){
     }
     if($script:Debug -eq 1){
         Write-ColorOut "InputPath:`t`t$script:InputPath" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "DeleteAllEXIF:`t$script:DeleteAllEXIF" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "DeleteAllMeta:`t$script:DeleteAllMeta" -ForegroundColor DarkGray -Indentation 4
         Write-ColorOut "AddCopyright:`t$script:AddCopyright" -ForegroundColor DarkGray -Indentation 4
         Write-ColorOut "PresetName:`t`t$script:PresetName" -ForegroundColor DarkGray -Indentation 4
         Write-ColorOut "ArtistName:`t`t$script:ArtistName" -ForegroundColor DarkGray -Indentation 4
