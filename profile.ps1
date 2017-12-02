@@ -7,26 +7,26 @@ Function Prompt(){
 
 Function Start-SingleCopy(){
     <#
-    .SYNOPSIS
-        Copy and verify a single file.
-    .DESCRIPTION
-        Using Robocopy and Get-FileHash to copy a file.
-    .NOTES
-        Version:        0.1.0 (Beta)
-        Author:         flolilo
-        Creation Date:  2017-11-26
-        Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
-        applicable law.
+        .SYNOPSIS
+            Copy and verify a single file.
+        .DESCRIPTION
+            Using Robocopy and Get-FileHash to copy a file.
+        .NOTES
+            Version:        0.1.1 (Beta)
+            Author:         flolilo
+            Creation Date:  2017-12-02
+            Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
+            applicable law.
 
-    .PARAMETER InputFile
-        File to copy.
-    .PARAMETER OutputPath
-        Path where the file should be copied to.
-    .PARAMETER Overwrite
-        If enabled (1), automatically overwrite existing files.
+        .PARAMETER InputFile
+            File to copy.
+        .PARAMETER OutputPath
+            Path where the file should be copied to.
+        .PARAMETER Overwrite
+            If enabled (1), automatically overwrite existing files.
 
-    .EXAMPLE
-        Start-SingleCopy "D:\My Files\test.txt" D:\
+        .EXAMPLE
+            Start-SingleCopy "D:\My Files\test.txt" D:\
     #>
     param(
         [Parameter(Mandatory=$true)]
@@ -47,7 +47,9 @@ Function Start-SingleCopy(){
 
     if($Overwrite -eq 0){
         if((Test-Path -LiteralPath "$OutputPath$(Split-Path -Path $InputFile -Leaf)" -PathType Leaf) -eq $true){
-            if((Read-Host "`"$OutputPath$(Split-Path -Path $InputFile -Leaf)`" already present - overwrite?") -ne 1){
+            $inter = Read-Host "`"$OutputPath$(Split-Path -Path $InputFile -Leaf)`" already present - overwrite?"
+            if($inter -ne 1 -and $inter -ne "y"){
+                [System.Console]::WriteLine("Aborting!")
                 return
             }
         }
