@@ -89,6 +89,41 @@ Function Write-ColorOut(){
     }
 }
 
+# DEFINITION: For the auditory experience:
+Function Start-Sound(){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+        .NOTES
+            Date: 2018-10-25
+
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
+    #>
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$Success
+    )
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
+    }
+}
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -234,3 +269,5 @@ Function Start-JPEGtest(){
     }
 
 Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Done!..." -ForegroundColor Green
+Start-Sound -Success 1
+Start-Sleep -Seconds 5
