@@ -143,10 +143,10 @@ Function Start-WOL(){
 
     for($i=0; $i -lt $script:WOL.Count; $i++){
         Write-Progress -Activity "Pinging server(s)..." -Status "# $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`"" -PercentComplete $((($i + 1) * 100) / $script:WOL.Count)
-        if(Test-Connection -ComputerName $script:WOL[$i].IPaddress -Buffer 16 -TimeToLive 2 -Delay 1 -Count 2 -Quiet){
-            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" already running!" -ForegroundColor Green
+        if((Test-Connection -ComputerName $script:WOL[$i].IPaddress -Buffer 16 -TimeToLive 2 -Delay 1 -Count 2 -Quiet) -eq $true){
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" already running!" -ForegroundColor DarkGreen -Indentation 4
         }else{
-            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" not running - waking up..." -ForegroundColor Yellow
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" not running - waking up..." -ForegroundColor Yellow -Indentation 4
             Start-Process -FilePath $script:WOLcmdPath -ArgumentList "$($script:WOL[$i].MACaddress) $($script:WOL[$i].IPaddress) 255.255.255.0 7" -NoNewWindow -Wait
         }
     }
