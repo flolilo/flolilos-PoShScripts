@@ -185,9 +185,9 @@ Function Start-Sound(){
 Function Get-UserValues(){
     if($script:upDown -ne "up" -and $script:upDown -ne "down"){
         while($true){
-            $script:upDown = Read-Host "Upload or download catalog(s)?"
+            [string]$script:upDown = Read-Host "Upload or download catalog(s)?"
             if($script:upDown -ne "up" -and $script:upDown -ne "down"){
-                Write-ColorOut "Invalid input - enter `"up`" or `"down`" (w/o quotes)" -ForegroundColor Magenta
+                Write-ColorOut "Invalid input - enter `"up`" or `"down`" (w/o quotes)" -ForegroundColor Magenta -Indentation 4
                 continue
             }else{
                 break
@@ -200,7 +200,7 @@ Function Get-UserValues(){
             $option = [System.StringSplitOptions]::RemoveEmptyEntries
             $script:toProcess = (Read-Host "Which catalog(s) to process? Both: `"C1`",`"LR`"").Split($separator,$option)
             if("LR" -notin $script:toProcess -and "C1" -notin $script:toProcess){
-                Write-ColorOut "Invalid input - enter `"c1`" or `"lr`" (w/o quotes). For both, enter `"c1,lr`" (or vice versa)." -ForegroundColor Magenta
+                Write-ColorOut "Invalid input - enter `"c1`" or `"lr`" (w/o quotes). For both, enter `"c1,lr`" (or vice versa)." -ForegroundColor Magenta -Indentation 4
                 continue
             }else{
                 break
@@ -247,9 +247,9 @@ Function Get-UserValues(){
     }
     if($script:upDown -eq "down" -and $script:backup_existing -notin (0..1)){
         while($true){
-            $script:backup_existing = Read-Host "Back up existing folders? (1 = yes, 0 = no)"
+            [int]$script:backup_existing = Read-Host "Back up existing folders? (1 = yes, 0 = no)"
             if($script:backup_existing -notin (0..1)){
-                Write-ColorOut "Invalid input." -ForegroundColor Magenta
+                Write-ColorOut "Invalid input." -ForegroundColor Magenta -Indentation 4
                 continue
             }else{
                 break
@@ -258,9 +258,9 @@ Function Get-UserValues(){
     }
     if($script:Delete -notin (0..2)){
         while($true){
-            $script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
+            [int]$script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
             if($script:Delete -notin (0..2)){
-                Write-ColorOut "Invalid input." -ForegroundColor Magenta
+                Write-ColorOut "Invalid input." -ForegroundColor Magenta -Indentation 4
                 continue
             }else{
                 break
@@ -321,14 +321,14 @@ Function Start-Download(){
         Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
         [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
             [PSCustomObject]@{
-                fullpath = $_.FullName
-                name = $_.Name
+                FullPath = $_.FullName
+                Name = $_.Name
             }
         }
         if($archive.Length -gt 1){
-            $archive | Sort-Object -Property Name -Descending
+            $archive = $archive | Sort-Object -Property Name -Descending
             $archive | Out-Null
-            Write-ColorOut "More than one LR-catalog-archive found:" -ForegroundColor Magenta
+            Write-ColorOut "More than one $catalogname-backup found:" -ForegroundColor Magenta
             for($i=0; $i -lt $archive.Length; $i++){
                 Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow
             }
@@ -341,7 +341,7 @@ Function Start-Download(){
             Write-ColorOut $archive.name
             Pause
         }elseif($archive.Length -lt 1){
-            Write-ColorOut "No Catalog-Backups found - aborting!" -ForegroundColor Red
+            Write-ColorOut "No $catalogname-backups found - aborting!" -ForegroundColor Red
             Pause
             Exit
         }
