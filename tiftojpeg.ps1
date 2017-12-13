@@ -1,19 +1,51 @@
 #requires -version 3
 
+
+<#
+    .SYNOPSIS
+        Tool to convert TIFs to JPEGs - and including their metadata.
+    .DESCRIPTION
+        This tool uses ImageMagick and ExifTool.
+    .NOTES
+        Version:    1.1
+        Date:       2017-12-13
+        Author:     flolilo
+
+    .INPUTS
+        TIF-files.
+    .OUTPUTS
+        JPEG-files.
+
+    .PARAMETER InputPath
+        Path to convert files from.
+    .PARAMETER EXIFtool
+        Path to exiftool.exe.
+    .PARAMETER Magick
+        Path to magick.exe.
+    .PARAMETER Quality
+        JPEG quality. See ImageMagick's CLI options for that.
+    .PARAMETER RemoveTIF
+        1 enables, 0 disables.
+        Remove TIFs to Recycle Bin after conversion.
+    .PARAMETER ThreadCount
+        Thread-Count for conversion and metadata-copying. Valid range: 1-48.
+#>
 param(
-    [string]$InputPath =        "$((Get-Location).Path)",
-    [string]$EXIFtool =         "$($PSScriptRoot)\exiftool.exe",
-    [string]$Magick =           "C:\Program Files\ImageMagick-7.0.7-Q8\magick.exe",
+    [string]$InputPath =    "$((Get-Location).Path)",
+    [string]$EXIFtool =     "$($PSScriptRoot)\exiftool.exe",
+    [string]$Magick =       "C:\Program Files\ImageMagick-7.0.7-Q8\magick.exe",
     [ValidateRange(0,100)]
-    [int]$Quality =             92,
+    [int]$Quality =         92,
     [ValidateRange(0,1)]
-    [int]$RemoveTIF =           1
+    [int]$RemoveTIF =       1,
+    [ValidateRange(1,48)]
+    [int]$ThreadCount =     12
 )
-[int]$ThreadCount = 12
+
 $sw = [diagnostics.stopwatch]::StartNew()
 
 if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
-    Write-Host "Module `"Recycle`" does not exist!"
+    Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
     Start-Sleep -Seconds 5
     Exit
 }
@@ -202,7 +234,7 @@ Function Start-JPEGtest(){
         }
         # Write-ColorOut "magick convert -quality $Quality `"$($_.TIFFullName.Replace("$InputPath","."))`" `"$($_.JPEGFullName.Replace("$InputPath","."))`"" -ForegroundColor Gray -Indentation 4
         # Start-Sleep -Milliseconds 50
-        Start-Process -FilePath $Magick -ArgumentList "convert -quality $Quality `"$($_.TIFFullName)`" `"$($_.JPEGFullName)`" -quiet" -NoNewWindow
+        Start-Process -FilePath $Magick -ArgumentList "convert -quiet -quality $Quality `"$($_.TIFFullName)`" `"$($_.JPEGFullName)`"" -NoNewWindow
         $counter++
         $i++
     } -End {
@@ -233,7 +265,7 @@ Function Start-JPEGtest(){
         }
         # Write-ColorOut "exiftool -tagsfromfile `"$($_.TIFFullName.Replace("$InputPath","."))`" -All:All -overwrite_original `"$($_.JPEGFullName.Replace("$InputPath","."))`"" -ForegroundColor DarkGray -Indentation 4
         # Start-Sleep -Milliseconds 50
-        Start-Process -FilePath $EXIFtool -ArgumentList " -tagsfromfile `"$($_.TIFFullName)`" -All:All -overwrite_original -q `"$($_.JPEGFullName)`"" -NoNewWindow
+        Start-Process -FilePath $EXIFtool -ArgumentList " -q -tagsfromfile `"$($_.TIFFullName)`" -All:All -overwrite_original `"$($_.JPEGFullName)`"" -NoNewWindow
         $counter++
         $i++
     } -End {
