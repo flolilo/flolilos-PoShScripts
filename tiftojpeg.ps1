@@ -7,8 +7,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    1.1
-        Date:       2017-12-13
+        Version:    1.2
+        Date:       2018-01-05
         Author:     flolilo
 
     .INPUTS
@@ -29,6 +29,8 @@
         Remove TIFs to Recycle Bin after conversion.
     .PARAMETER ThreadCount
         Thread-Count for conversion and metadata-copying. Valid range: 1-48.
+    .PARAMETER Debug
+        Stops after each step.
 #>
 param(
     [string]$InputPath =    "$((Get-Location).Path)",
@@ -39,7 +41,8 @@ param(
     [ValidateRange(0,1)]
     [int]$RemoveTIF =       1,
     [ValidateRange(1,48)]
-    [int]$ThreadCount =     12
+    [int]$ThreadCount =     12,
+    [int]$Debug =           0
 )
 
 $sw = [diagnostics.stopwatch]::StartNew()
@@ -156,6 +159,11 @@ Function Start-Sound(){
     }
 }
 
+Function Invoke-Pause(){
+    if($script:Debug -ne 0){
+        Pause
+    }
+}
 
 # ==================================================================================================
 # ==============================================================================
@@ -191,6 +199,12 @@ Function Start-JPEGtest(){
     return $result
 }
 
+Write-ColorOut "                                                                                      A" -BackgroundColor DarkGray -ForegroundColor DarkGray
+Write-ColorOut "                            flolilo's TIF to JPEG converter                            " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "                                  v1.2.5 - 2018-01-05                                  " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "(PID = $("{0:D8}" -f $pid))                                                                       `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+Invoke-Pause
+
 # DEFINITION: Get Files:
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Search files in $InPath..." -ForegroundColor Cyan
     [array]$files = @(Get-ChildItem -Path $InputPath -File -Filter *.tif | ForEach-Object -Begin {
@@ -213,6 +227,7 @@ Function Start-JPEGtest(){
     } -End {
         Write-Progress -Activity "Searching files..." -Status "Done!" -Completed        
     })
+    Invoke-Pause
 
 # DEFINITION: Convert:
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Converting TIF to JPEG..." -ForegroundColor Cyan
@@ -244,6 +259,7 @@ Function Start-JPEGtest(){
         }
         Write-Progress -Activity "Converting TIF to JPEG (-q = $Quality)..." -Status "Done!" -Completed
     }
+    Invoke-Pause
 
 # DEFINITION: Transfer:
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Transfering metadata..." -ForegroundColor Cyan
@@ -275,7 +291,7 @@ Function Start-JPEGtest(){
         }
         Write-Progress -Activity "Transfering metadata..." -Status "Done!" -Completed
     }
-
+    Invoke-Pause
 
 # DEFINITION: Recycle:
     if($RemoveTIF -eq 1){
@@ -299,7 +315,9 @@ Function Start-JPEGtest(){
             Write-Progress -Activity "Recycling TIFs..." -Status "Done!" -Completed
         }
     }
+    Invoke-Pause
 
 Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Done!..." -ForegroundColor Green
 Start-Sound -Success 1
 Start-Sleep -Seconds 5
+Invoke-Pause
