@@ -6,8 +6,8 @@
     .DESCRIPTION
         CREDIT: wolcmd by https://www.depicus.com/wake-on-lan/wake-on-lan-cmd
     .NOTES
-        Version:    1.1
-        Date:       2017-11-30
+        Version:    1.2
+        Date:       2018-01-27
         Author:     flolilo
 #>
 param(
@@ -102,6 +102,11 @@ Function Write-ColorOut(){
 # ==============================================================================
 # ==================================================================================================
 
+Write-ColorOut "                                                                                      A" -BackgroundColor DarkGray -ForegroundColor DarkGray
+Write-ColorOut "                            flolilo's WOLscript                            " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "                                  v1.2 - 2018-01-27                                  " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "(PID = $("{0:D8}" -f $pid))                                                                       `r`n`r`n`r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+
 # DEFINITION: Get JSON values:
 Function Get-Values(){
     Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Finding values..." -ForegroundColor Cyan
@@ -114,7 +119,7 @@ Function Get-Values(){
     })
     if($script:IPaddress.Length -eq 0 -or $script:MACaddress.Length -eq 0){
         try{
-            Test-Path -Path $script:InputFile -PathType Leaf -ErrorAction Stop
+            Test-Path -Path $script:InputFile -PathType Leaf -ErrorAction Stop | Out-Null
             $inter = Get-Content -Path $script:InputFile -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop
             for($i=0; $i -lt $inter.Length; $i++){
                 $script:WOL[$i].Name = $inter[$i].Name
