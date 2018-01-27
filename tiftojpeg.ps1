@@ -7,8 +7,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    1.2
-        Date:       2018-01-05
+        Version:    1.3
+        Date:       2018-01-27
         Author:     flolilo
 
     .INPUTS
@@ -35,7 +35,7 @@
 param(
     [string]$InputPath =    "$((Get-Location).Path)",
     [string]$EXIFtool =     "$($PSScriptRoot)\exiftool.exe",
-    [string]$Magick =       "C:\Program Files\ImageMagick-7.0.7-Q8\magick.exe",
+    [string]$Magick =       "$($PSScriptRoot)\ImageMagick\magick.exe",
     [ValidateRange(0,100)]
     [int]$Quality =         92,
     [ValidateRange(0,1)]
@@ -201,12 +201,12 @@ Function Start-JPEGtest(){
 
 Write-ColorOut "                                                                                      A" -BackgroundColor DarkGray -ForegroundColor DarkGray
 Write-ColorOut "                            flolilo's TIF to JPEG converter                            " -ForegroundColor DarkCyan -BackgroundColor Gray
-Write-ColorOut "                                  v1.2.5 - 2018-01-05                                  " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "                                  v1.3 - 2018-01-27                                  " -ForegroundColor DarkCyan -BackgroundColor Gray
 Write-ColorOut "(PID = $("{0:D8}" -f $pid))                                                                       `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 Invoke-Pause
 
 # DEFINITION: Get Files:
-    Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Search files in $InPath..." -ForegroundColor Cyan
+    Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Search files in $InputPath..." -ForegroundColor Cyan
     [array]$files = @(Get-ChildItem -Path $InputPath -File -Filter *.tif | ForEach-Object -Begin {
         [int]$i = 1
         Write-Progress -Activity "Searching files..." -Status "File # $i" -PercentComplete -1
@@ -232,7 +232,7 @@ Invoke-Pause
 # DEFINITION: Convert:
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Converting TIF to JPEG..." -ForegroundColor Cyan
     $files | ForEach-Object -Begin {
-        [int]$counter=0
+        [int]$counter = $ThreadCount
         [int]$i = 1
         Write-Progress -Activity "Converting TIF to JPEG (-q = $Quality)..." -Status "File # $i/$($files.Count) - $($_.TIFName)" -PercentComplete $($i * 100 / $files.Count)
         $sw.Reset()
@@ -249,7 +249,7 @@ Invoke-Pause
         }
         # Write-ColorOut "magick convert -quality $Quality `"$($_.TIFFullName.Replace("$InputPath","."))`" `"$($_.JPEGFullName.Replace("$InputPath","."))`"" -ForegroundColor Gray -Indentation 4
         # Start-Sleep -Milliseconds 50
-        Start-Process -FilePath $Magick -ArgumentList "convert -quiet -quality $Quality `"$($_.TIFFullName)`" `"$($_.JPEGFullName)`"" -NoNewWindow
+        Start-Process -FilePath $Magick -ArgumentList "convert -quiet -quality $Quality -depth 8 `"$($_.TIFFullName)`" `"$($_.JPEGFullName)`"" -NoNewWindow
         $counter++
         $i++
     } -End {
@@ -264,7 +264,7 @@ Invoke-Pause
 # DEFINITION: Transfer:
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Transfering metadata..." -ForegroundColor Cyan
     $files | ForEach-Object -Begin {
-        [int]$counter=0
+        [int]$counter = $ThreadCount
         [int]$i = 1
         Write-Progress -Activity "Transfering metadata..." -Status "File # $i/$($files.Count) - $($_.TIFName)" -PercentComplete $($i * 100 / $files.Count)
         $sw.Reset()
@@ -317,7 +317,7 @@ Invoke-Pause
     }
     Invoke-Pause
 
-Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Done!..." -ForegroundColor Green
+Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")  --  Done!" -ForegroundColor Green
 Start-Sound -Success 1
 Start-Sleep -Seconds 5
 Invoke-Pause
