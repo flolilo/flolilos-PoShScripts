@@ -6,7 +6,7 @@
     .DESCRIPTION
         Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
     .NOTES
-        Version:        2.0
+        Version:        2.1
         Author:         flolilo
         Creation Date:  2018-02-16
 
@@ -17,7 +17,7 @@
         none.
 
     .PARAMETER InputPath
-        Path where images should be searched and edited (default: current path of console).
+        Path where images should be searched and edited (default: current path of console). Or file(s).
     .PARAMETER Formats
         All formats to process.
     .PARAMETER DeleteAllMeta
@@ -56,6 +56,7 @@ param(
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -164,6 +165,17 @@ Function Start-Sound(){
     }
 }
 
+# DEFINITION: Pause in Debug:
+Function Invoke-Pause(){
+    if($script:Debug -ne 0){
+        Pause
+    }
+}
+
+Function Get-CurrentDate(){
+    return $(Get-Date -Format "dd.MM.yy HH:mm:ss")
+}
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -173,13 +185,12 @@ Function Start-Sound(){
 
 # DEFINITION: Get user-values:
 Function Test-UserValues(){
-    Write-ColorOut "$(Get-Date -Format "yy.MM.dd - HH:mm")  -" -NoNewLine -ForegroundColor Gray
-    Write-ColorOut "-  Testing paths..." -ForegroundColor Cyan
+    Write-ColorOut "$(Get-CurrentDate)  --  Testing exiftool..." -ForegroundColor Cyan
 
     # DEFINITION: Search for exiftool:
-    if((Test-Path -LiteralPath $script:Encoder -PathType Leaf) -eq $false){
+    if((Test-Path -LiteralPath $script:EXIFtool -PathType Leaf) -eq $false){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $true){
-            [string]$script:Encoder = "$($PSScriptRoot)\exiftool.exe"
+            [string]$script:EXIFtool = "$($PSScriptRoot)\exiftool.exe"
         }else{
             Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red -Indentation 2
             Start-Sound -Success 0
@@ -187,31 +198,66 @@ Function Test-UserValues(){
             return $false
         }
     }
+    return $true
+}
 
-    [array]$script:WorkingFiles = @()
-    for($i=0; $i -lt $script:InputPath.Length; $i++){
-        $script:InputPath[$i] = Resolve-Path $script:InputPath[$i] | Select-Object -ExpandProperty Path
-        if((Test-Path -LiteralPath $script:InputPath[$i] -PathType Container) -eq $true){
-            foreach($k in $script:Formats){
-                $script:WorkingFiles += @(Get-ChildItem -LiteralPath $script:InputPath[$i] -Filter $k | Select-Object -ExpandProperty FullName)
+Function Get-InputFiles(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [array]$InputPath,
+        [Parameter(Mandatory=$true)]
+        [array]$Formats
+    )
+    Write-ColorOut "$(Get-CurrentDate)  --  Getting files..." -ForegroundColor Cyan
+    $sw = [diagnostics.stopwatch]::StartNew()
+
+    [array]$WorkingFiles = @()
+    for($i=0; $i -lt $InputPath.Length; $i++){
+        if($sw.Elapsed.TotalMilliseconds -ge 750){
+            Write-Progress -Id 1 -Activity "Searching files..." -Status "$InputPath" -PercentComplete $($($i + 1) *100 / $($InputPath.Length))
+            Write-Progress -id 3 -Activity "Searching files..." -Status "File #$($WorkingFiles.Length)" -PercentComplete -1
+            $sw.Reset()
+            $sw.Start()
+        }
+
+        $InputPath[$i] = Resolve-Path $InputPath[$i] | Select-Object -ExpandProperty Path
+        if((Test-Path -LiteralPath $InputPath[$i] -PathType Container) -eq $true){
+            foreach($k in $Formats){
+                if($sw.Elapsed.TotalMilliseconds -ge 750){
+                    Write-Progress -Id 2 -Activity "Searching files..." -Status "Format #$($k +1)/$($Formats.Length)" -PercentComplete $($($k + 1) *100 / $($Formats.Length))
+                    Write-Progress -id 3 -Activity "Searching files..." -Status "File #$($WorkingFiles.Length)" -PercentComplete -1
+                    $sw.Reset()
+                    $sw.Start()
+                }
+
+                $WorkingFiles += @(Get-ChildItem -LiteralPath $InputPath[$i] -Filter $k | Select-Object -ExpandProperty FullName)
             }
-        }elseif((Test-Path -LiteralPath $script:InputPath[$i] -PathType Leaf) -eq $true){
-                $script:WorkingFiles += $script:InputPath[$i]
+        }elseif((Test-Path -LiteralPath $InputPath[$i] -PathType Leaf) -eq $true){
+            if($sw.Elapsed.TotalMilliseconds -ge 750){
+                Write-Progress -id 3 -Activity "Searching files..." -Status "File #$($WorkingFiles.Length)" -PercentComplete -1
+                $sw.Reset()
+                $sw.Start()
+            }
+
+            $WorkingFiles += $InputPath[$i]
         }else{
-            Write-ColorOut "InputPath not found - aborting!" -ForegroundColor Red -Indentation 2
+            Write-ColorOut "$($InputPath[$i]) not found - aborting!" -ForegroundColor Red -Indentation 2
             Start-Sound -Success 0
             Start-Sleep -Seconds 5
             return $false
         }
     }
+    Write-Progress -Id 3 -Activity "Searching files..." -Status "Done!" -Completed
+    Write-Progress -Id 2 -Activity "Searching files..." -Status "Done!" -Completed
+    Write-Progress -Id 1 -Activity "Searching files..." -Status "Done!" -Completed
 
-    return $true
+    return $WorkingFiles
 }
 
 Function Get-EXIFValues(){
-    Write-ColorOut "$(Get-Date -Format "yy.MM.dd - HH:mm")  -" -NoNewLine -ForegroundColor Gray
-    Write-ColorOut "-  Getting user-values..." -ForegroundColor Cyan
-    if($script:AddCopyright -eq 1 -and ($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1)){
+    Write-ColorOut "$(Get-CurrentDate)  --  Getting user-values..." -ForegroundColor Cyan
+
+    if($script:ArtistName.Length -lt 1 -or $script:CopyrightText.Length -lt 1){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -PathType Leaf) -eq $true){
             try{
                 $JSON = Get-Content -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -Raw -Encoding UTF8 | ConvertFrom-JSON
@@ -259,78 +305,49 @@ Function Get-EXIFValues(){
 
 # DEFINITION: Changing EXIF:
 Function Set-Arguments(){
-    # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html
-    # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/IPTC.html
+        # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/EXIF.html
+        # CREDIT: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/IPTC.html
+    Write-ColorOut "$(Get-CurrentDate)  -" -NoNewLine -ForegroundColor Cyan
 
-    Write-ColorOut "$(Get-Date -Format "yy.MM.dd - HH:mm:ss")  -" -NoNewLine -ForegroundColor Gray
     # DEFINITION: Write Arguments into string:
     if($script:DeleteAllMeta -eq 1 -and $script:AddCopyright -eq 1){
-        Write-ColorOut "-  Delete all metadata, then add Copyright to EXIF and IPTC..." -ForegroundColor Cyan
-        [string]$ArgumentList = "-All:All=`n-xresolution=288`n-yresolution=288`n-artist=$script:ArtistName`n-copyright=$script:CopyrightText`n-IPTC:By-Line=$script:ArtistName`n-IPTC:CopyrightNotice=$script:CopyrightText"
+        Write-ColorOut "-  Remove all metadata, then re-add pre-existing keyword and overwrite copyright notes..." -ForegroundColor Cyan
+        [string]$ArgumentList = "-All:All=`n-xresolution=300`n-yresolution=300`n-artist=$script:ArtistName`n-copyright=$script:CopyrightText`n-IPTC:By-Line=$script:ArtistName`n-IPTC:CopyrightNotice=$script:CopyrightText`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
     }
     elseif($script:DeleteAllMeta -eq 1 -and $script:AddCopyright -eq 0){
-        Write-ColorOut "-  Delete all metadata..." -ForegroundColor Cyan
-        [string]$ArgumentList = "-All:All=`n-xresolution=288`n-yresolution=288`n-IPTC:By-Line<IPTC:By-Line`n-IPTC:CopyrightNotice<IPTC:CopyrightNotice`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
+        Write-ColorOut "-  Remove all metadata, then re-add pre-existing keywords and copyright notes..." -ForegroundColor Cyan
+        [string]$ArgumentList = "-All:All=`n-xresolution=300`n-yresolution=300`n-IPTC:By-Line<IPTC:By-Line`n-IPTC:CopyrightNotice<IPTC:CopyrightNotice`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
     }
     elseif($script:DeleteAllMeta -eq 0 -and $script:AddCopyright -eq 1){
-        Write-ColorOut "-  Delete only software information, overwrite copyright in EXIF and IPTC..." -ForegroundColor Cyan
-        [string]$ArgumentList = "-xresolution=288`n-yresolution=288`n-EXIF:Software=`n-Photoshop:All=`n-Adobe:All=`n-artist=$script:ArtistName`n-copyright=$script:CopyrightText`n-IPTC:By-Line=$script:ArtistName`n-IPTC:CopyrightNotice=$script:CopyrightText`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
+        Write-ColorOut "-  Remove software information only, then overwrite copyright in EXIF and IPTC..." -ForegroundColor Cyan
+        [string]$ArgumentList = "-xresolution=300`n-yresolution=300`n-EXIF:Software=`n-Photoshop:All=`n-Adobe:All=`n-artist=$script:ArtistName`n-copyright=$script:CopyrightText`n-IPTC:By-Line=$script:ArtistName`n-IPTC:CopyrightNotice=$script:CopyrightText`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
     }
     elseif($script:DeleteAllMeta -eq 0 -and $script:AddCopyright -eq 0){
-        Write-ColorOut "-  Delete only software information, re-add IPTC-tags..." -ForegroundColor Cyan
-        [string]$ArgumentList = "-xresolution=288`n-yresolution=288`n-EXIF:Software=`n-Photoshop:All=`n-Adobe:All=`n-IPTC:By-Line<IPTC:By-Line`n-IPTC:CopyrightNotice<IPTC:CopyrightNotice`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
+        Write-ColorOut "-  Remove software information only, then re-add pre-existing keywords..." -ForegroundColor Cyan
+        [string]$ArgumentList = "-xresolution=300`n-yresolution=300`n-EXIF:Software=`n-Photoshop:All=`n-Adobe:All=`n-IPTC:By-Line<IPTC:By-Line`n-IPTC:CopyrightNotice<IPTC:CopyrightNotice`n-IPTC:ObjectName<IPTC:ObjectName`n-IPTC:Keywords<IPTC:Keywords"
     }
     # Keep modified date, show progress, overwrite original files, process JP(E)Gs:
     [string]$ArgumentList = $ArgumentList + "`n-P`n-overwrite_original"
-    if($script:Debug -eq 1){
-        Write-ColorOut "ArgumentList:`t$($ArgumentList.replace("`n"," "))" -ForegroundColor DarkGray -Indentation 4
-        Pause
-    }
 
     return $ArgumentList
 }
 
-# DEFINITION: Start everything:
-Function Start-Everything(){
-    Write-ColorOut "Welcome to flolilo's EXIF-tool!" -ForegroundColor DarkCyan -BackgroundColor Gray
-    if((Test-UserValues) -eq $false){
-        Exit
-    }
+# DEFINITION: Start EXIFtool:
+Function Start-EXIFtool(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [array]$WorkingFiles,
+        [Parameter(Mandatory=$true)]
+        [string]$ArgumentList,
+        [Parameter(Mandatory=$true)]
+        [string]$EXIFtool
+    )
+    Write-ColorOut "$(Get-CurrentDate)  --  Start EXIFtool..." -ForegroundColor Cyan
+    $sw = [diagnostics.stopwatch]::StartNew()
 
-    # DEFINITION: Get EXIF-values from JSON / user:
-    Get-EXIFValues
-    if($script:AddCopyright -eq 1){
-        Write-ColorOut "Artist's name:`t$script:ArtistName" -ForegroundColor Gray -Indentation 4
-        Write-ColorOut "Copyright text:`t$script:CopyrightText" -ForegroundColor DarkGray -Indentation 4
-        if($script:Debug -gt 0){
-            while($true){
-                Write-ColorOut "To proceed, press 1:`t" -NoNewLine -ForegroundColor Yellow
-                if((Read-Host) -eq 1){
-                    break
-                }else{
-                    continue
-                }
-            }
-        }
-    }
-
-    $ArgumentList = Set-Arguments
-
-    if($script:Debug -gt 0){
-        Write-ColorOut "InputPath:`t`t$script:InputPath" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "WorkingFiles:`t$script:WorkingFiles" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "DeleteAllMeta:`t$script:DeleteAllMeta" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "AddCopyright:`t$script:AddCopyright" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "PresetName:`t`t$script:PresetName" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "ArtistName:`t`t$script:ArtistName" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "CopyrightText:`t$script:CopyrightText" -ForegroundColor DarkGray -Indentation 4
-        Write-ColorOut "Encoder:`t`t$script:Encoder" -ForegroundColor DarkGray -Indentation 4
-        Pause
-    }
-
-    # Create Exiftool process
+    # DEFINITION: Create Exiftool process:
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $script:EXIFtool
+    $psi.FileName = $EXIFtool
     $psi.Arguments = "-stay_open True -@ -"
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = $true
@@ -339,21 +356,84 @@ Function Start-Everything(){
     $exiftoolproc = [System.Diagnostics.Process]::Start($psi)
     Start-Sleep -Seconds 1
 
-    for($i=0; $i -lt $script:WorkingFiles.length; $i++){
-        Write-Progress -Activity "ExifTool" -Status "$i" -PercentComplete $($i / $script:WorkingFiles.Length)
-        $exiftoolproc.StandardInput.WriteLine("$ArgumentList`n$($script:WorkingFiles[$i])`n-execute`n")
+    # DEFINITION: Pass arguments to Exiftool:
+    for($i=0; $i -lt $WorkingFiles.length; $i++){
+        if($sw.Elapsed.TotalMilliseconds -ge 750){
+            Write-Progress -Activity "EXIFtool" -Status "#$($i + 1) - $($WorkingFiles[$i])" -PercentComplete $($($i + 1) * 100 / $WorkingFiles.Length)
+            $sw.Reset()
+            $sw.Start()
+        }
+
+        $exiftoolproc.StandardInput.WriteLine("$ArgumentList`n$($WorkingFiles[$i])`n-execute`n")
     }
-    Write-Progress -Activity "ExifTool" -Status "Complete!" -Completed
     $exiftoolproc.StandardInput.WriteLine("-stay_open`nFalse`n")
 
-    [array]$outputerror = $exiftoolproc.StandardError.ReadToEnd()
-    [array]$outputout = $exiftoolproc.StandardOutput.ReadToEnd().Split("`r`n",[System.StringSplitOptions]::RemoveEmptyEntries)
-    $outputout = $outputout | Where-Object {$_ -ne "{Ready}"}
+    [array]$outputerror = @($exiftoolproc.StandardError.ReadToEnd().Split("`r`n",[System.StringSplitOptions]::RemoveEmptyEntries))
+    [string]$outputout = $exiftoolproc.StandardOutput.ReadToEnd()
+    $outputout = $outputout -replace '========\ ','' -replace '\[1/1]','' -replace '\ \r\n\ \ \ \ '," - " -replace '{ready}\r\n',''
+    [array]$outputout = @($outputout.Split("`r`n",[System.StringSplitOptions]::RemoveEmptyEntries))
 
     $exiftoolproc.WaitForExit()
+    Write-Progress -Activity "EXIFtool" -Status "Complete!" -Completed
 
-    Write-Host "Errors:`t$outputerror" -ForegroundColor Red
-    Write-Host "Outputs:`t$outputout" -ForegroundColor Gray
+    for($i=0; $i -lt $WorkingFiles.length; $i++){
+        Write-ColorOut "$($WorkingFiles[$i]):`t" -ForegroundColor Gray -NoNewLine
+        if($outputerror[$i].Length -gt 0){
+            Write-ColorOut "$($outputerror[$i])`t" -ForegroundColor Red -NoNewline
+        }
+        Write-ColorOut "$($outputout[$i])" -ForegroundColor Yellow
+    }
+}
+
+# DEFINITION: Start everything:
+Function Start-Everything(){
+    Write-ColorOut "                                  A" -BackgroundColor DarkGray -ForegroundColor DarkGray
+    Write-ColorOut "        flolilo's EXIF-tool        " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "         v2.1 - 2018-02-16         " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "(PID = $("{0:D8}" -f $pid))                   `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+
+    
+    if((Test-UserValues) -eq $false){
+        Invoke-Pause
+        Exit
+    }else{
+        Invoke-Pause
+        $WorkingFiles = @(Get-InputFiles -InputPath $script:InputPath -Formats $script:Formats)
+        if($WorkingFiles -eq $false){
+            Invoke-Pause
+            Exit
+        }else{
+            Invoke-Pause
+        }
+    }
+
+    # DEFINITION: Get EXIF-values from JSON / user:
+    if($script:AddCopyright -eq 1){
+        Get-EXIFValues
+        Invoke-Pause
+    }
+
+    $ArgumentList = Set-Arguments
+
+    if($script:Debug -gt 0){
+        Write-ColorOut "InputPath:`t`t$script:InputPath" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "WorkingFiles:`t$WorkingFiles" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "DeleteAllMeta:`t$script:DeleteAllMeta" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "AddCopyright:`t$script:AddCopyright" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "PresetName:`t`t$script:PresetName" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "ArtistName:`t`t$script:ArtistName" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "CopyrightText:`t$script:CopyrightText" -ForegroundColor DarkGray -Indentation 4
+        Write-ColorOut "ArgumentList:`t$($ArgumentList.replace("`n"," "))" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "Encoder:`t`t$script:EXIFtool" -ForegroundColor DarkGray -Indentation 4
+        Pause
+    }
+
+    Start-EXIFtool -WorkingFiles $WorkingFiles -ArgumentList $ArgumentList -EXIFtool $script:EXIFtool
+
+    Write-ColorOut "$(Get-CurrentDate)  --  Done!`r`n" -ForegroundColor Green
+    Start-Sound -Success 1
+    Start-Sleep -Seconds 1
+    Invoke-Pause
 }
 
 Start-Everything
