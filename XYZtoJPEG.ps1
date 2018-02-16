@@ -173,8 +173,9 @@ Function Invoke-Pause(){
     }
 }
 
+# DEFINITION: Getting date and time in pre-formatted string:
 Function Get-CurrentDate(){
-    return $(Get-Date -Format "dd.MM.yy HH:mm:ss")
+    return $(Get-Date -Format "yy-MM-dd HH:mm:ss")
 }
 
 
