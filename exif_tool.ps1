@@ -48,7 +48,7 @@ param(
     [string]$PresetName =       "default",
     [string]$ArtistName =       "",
     [string]$CopyrightText =    "",
-    [string]$Encoder =          "$($PSScriptRoot)\exiftool.exe",
+    [string]$EXIFtool =          "$($PSScriptRoot)\exiftool.exe",
     [int]$Debug =               0
 )
 
@@ -330,27 +330,27 @@ Function Start-Everything(){
 
     # Create Exiftool process
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $script:Encoder
+    $psi.FileName = $script:EXIFtool
     $psi.Arguments = "-stay_open True -@ -"
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
-    $exiftool = [System.Diagnostics.Process]::Start($psi)
+    $exiftoolproc = [System.Diagnostics.Process]::Start($psi)
     Start-Sleep -Seconds 1
 
     for($i=0; $i -lt $script:WorkingFiles.length; $i++){
         Write-Progress -Activity "ExifTool" -Status "$i" -PercentComplete $($i / $script:WorkingFiles.Length)
-        $exiftool.StandardInput.WriteLine("$ArgumentList`n$($script:WorkingFiles[$i])`n-execute`n")
+        $exiftoolproc.StandardInput.WriteLine("$ArgumentList`n$($script:WorkingFiles[$i])`n-execute`n")
     }
     Write-Progress -Activity "ExifTool" -Status "Complete!" -Completed
-    $exiftool.StandardInput.WriteLine("-stay_open`nFalse`n")
+    $exiftoolproc.StandardInput.WriteLine("-stay_open`nFalse`n")
 
-    [array]$outputerror = $exiftool.StandardError.ReadToEnd()
-    [array]$outputout = $exiftool.StandardOutput.ReadToEnd().Split("`r`n",[System.StringSplitOptions]::RemoveEmptyEntries)
+    [array]$outputerror = $exiftoolproc.StandardError.ReadToEnd()
+    [array]$outputout = $exiftoolproc.StandardOutput.ReadToEnd().Split("`r`n",[System.StringSplitOptions]::RemoveEmptyEntries)
     $outputout = $outputout | Where-Object {$_ -ne "{Ready}"}
 
-    $exiftool.WaitForExit()
+    $exiftoolproc.WaitForExit()
 
     Write-Host "Errors:`t$outputerror" -ForegroundColor Red
     Write-Host "Outputs:`t$outputout" -ForegroundColor Gray
