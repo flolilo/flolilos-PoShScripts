@@ -63,7 +63,7 @@ param(
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
-
+# DEFINITION: Load Module "Recycle" for moving files to bin instead of removing completely.
 if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
     Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
     Start-Sleep -Seconds 5
