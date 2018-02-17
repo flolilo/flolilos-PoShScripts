@@ -3,41 +3,39 @@
 # TODO: TODO: Proper documentation, Remove-ItemSafely TODO: TODO:
 <#
     .SYNOPSIS
-        Deletes subfolders that don't contain specified extensions
-
+        Deletes subfolders that don't contain specified extensions. Also deletes abandoned XMPs.
     .DESCRIPTION
-
-
+        Uses the Recycle module to move files to Recycle Bin.
     .NOTES
-        Version:        1.2
+        Version:        1.3
         Author:         flolilo
-        Creation Date:  2017-09-09
+        Creation Date:  2018-02-17
         Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
         applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
         on the WWW). However, some parts are copies or modifications of very genuine code - see
         the "CREDIT:"-tags to find them.
-
-        .PARAMETER $script:InputPath
-            Path to check
-        .PARAMETER catalog_folder
-            Folder that should be excluded
-        .PARAMETER extension
-            Extensions that are searched for: if these exist in a folder, it will not be deleted.
-        .PARAMETER debug
-            Adds confirmation-dialogs for removal of folders.
 
         .INPUTS
             None.
         .OUTPUTS
             None.
 
+        .PARAMETER InputPath
+            Path to check.
+        .PARAMETER CatalogFolder
+            Folder that should be excluded.
+        .PARAMETER Extensions
+            Extensions that are searched for: if these exist in a folder, it will not be deleted.
+        .PARAMETER Debug
+            Adds confirmation-dialogs for removal of folders.
+
         .EXAMPLE
             .\pictures_cleanup.ps1 -$script:InputPath "D:\My pictures" -catalog_Folder "dontdeleteme" -extensions @("*.ext1","*.ext2") -debug 1
 #>
 param(
-    [string]$InputPath = "D:\Eigene_Bilder\_CANON",
-    [string]$catalog_folder = "_Picture_Catalogs",
-    [array]$extensions = @(
+    [string]$InputPath = "$((Get-Location).Path)",
+    [string]$CatalogFolder = "_Picture_Catalogs",
+    [array]$Extensions = @(
         "*.arw",
         "*.avi",
         "*.bmp",
@@ -63,16 +61,20 @@ param(
         "*.tif",
         "*.tiff"
     ),
-    [int]$debug = 1
+    [int]$Debug = 1
 )
-
-[int]$confirm = $(if($debug -eq 1){1}else{0})
+[int]$confirm = $Debug
 
 # DEFINITION: Get all error-outputs in English:
 [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
 $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
-
+# DEFINITION: Load Module "Recycle" for moving files to bin instead of removing completely.
+if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
+    Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
+    Start-Sleep -Seconds 5
+    Exit
+}
 
 # ==================================================================================================
 # ==============================================================================
@@ -181,6 +183,18 @@ Function Start-Sound(){
     }
 }
 
+# DEFINITION: Pause in Debug:
+Function Invoke-Pause(){
+    if($script:Debug -ne 0){
+        Pause
+    }
+}
+
+# DEFINITION: Getting date and time in pre-formatted string:
+Function Get-CurrentDate(){
+    return $(Get-Date -Format "yy-MM-dd HH:mm:ss")
+}
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -190,55 +204,64 @@ Function Start-Sound(){
 
 [int]$errorcounter = 0
 
+# DEFINITION: Search for folders:
 Function Start-Searching(){
     param(
         [Parameter(Mandatory=$true)]
         [string]$InputPath,
         [Parameter(Mandatory=$true)]
-        [string]$catalog_folder,
+        [string]$CatalogFolder,
         [Parameter(Mandatory=$true)]
-        [array]$extensions
+        [array]$Extensions
     )
+    $sw = [diagnostics.stopwatch]::StartNew()
 
-    $sw_A = [diagnostics.stopwatch]::StartNew()
-    [int]$sw_counter = 0
-    $folder = @(Get-ChildItem -LiteralPath $InputPath -Directory -Recurse | Where-Object {$_.FullName -notmatch $catalog_folder} | ForEach-Object {
-        if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $sw_counter -eq 0){
-            Write-Progress -Activity "Getting folders..." -Status "# $sw_counter - $($_.FullName)" -PercentComplete -1
-            $sw_A.Reset()
-            $sw_A.Start()
+    # DEFINITION: Look up the folders:
+    [array]$WorkingFolders = @(Get-ChildItem -LiteralPath $InputPath -Directory -Recurse | Where-Object {$_.FullName -notmatch $CatalogFolder} | ForEach-Object -Begin {
+        [int]$i = 1
+        Write-Progress -Activity "Getting folders..." -Status "# $i - $($_.FullName)" -PercentComplete -1
+            $sw.Reset()
+            $sw.Start()
+    } -Process {
+        if($sw.Elapsed.TotalMilliseconds -ge 750){
+            Write-Progress -Activity "Getting folders..." -Status "# $i - $($_.FullName)" -PercentComplete -1
+            $sw.Reset()
+            $sw.Start()
         }
-        $sw_counter++
+
         [PSCustomObject]@{
             FullName = $_.FullName
             BaseName = $_.BaseName
             FileCount = 0
+            Directory = Split-Path -Parent -Path $_.FullName
             # SubfolderCount = (Get-ChildItem -Path $_.FullName -Directory).count
         }
+        $i++
+    } -End {
+        Write-Progress -Activity "Getting folders..." -Status "Done" -Completed
     })
-    Write-Progress -Activity "Getting folders..." -Status "Done" -Completed
 
-    [int]$sw_counter = 0
-    for($i=0; $i -lt $folder.Length; $i++){
-        if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $sw_counter -eq 0){
-            Write-Progress -Activity "Getting files..." -Status "# $sw_counter - $($folder[$i].FullName)" -PercentComplete ($i * 100 / $folder.Length)
-            $sw_A.Reset()
-            $sw_A.Start()
+    # DEFINITION: Look up each folder's files:
+    for($i=0; $i -lt $WorkingFolders.Length; $i++){
+        if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
+            Write-Progress -Activity "Getting files..." -Status "# $i - $($WorkingFolders[$i].FullName)" -PercentComplete ($($i + 1) * 100 / $WorkingFolders.Length)
+            $sw.Reset()
+            $sw.Start()
         }
-        $sw_counter++
+
         foreach($j in $extensions){
-            [int]$folder[$i].FileCount += (Get-ChildItem -LiteralPath $folder[$i].FullName -Filter $j -Recurse).Count
+            [int]$WorkingFolders[$i].FileCount += (Get-ChildItem -LiteralPath $WorkingFolders[$i].FullName -Filter $j -Recurse).Count
         }
     }
     Write-Progress -Activity "Getting files..." -Status "Done" -Completed
 
+    $WorkingFolders = $WorkingFolders | Sort-Object -Property FullName -Descending
+    $WorkingFolders | Out-Null
 
-    $folder = $folder | Sort-Object -Property FullName -Descending
-    $folder | Out-Null
-
-    return $folder
+    return $WorkingFolders
 }
 
+# DEFINITION: Cleaning up:
 Function Start-Cleaning(){
     param(
         [Parameter(Mandatory=$true)]
@@ -246,8 +269,8 @@ Function Start-Cleaning(){
         [Parameter(Mandatory=$true)]
         [string]$InputPath
     )
+    Write-ColorOut "$(Get-CurrentDate)  --  Looking for folders to delete.." -ForegroundColor Cyan
 
-    Write-ColorOut "Now looking for folders to delete..." -ForegroundColor Cyan
     for($i=0; $i -lt $ToClean.Length; $i++){
         if($ToClean[$i].filecount -eq 0){
             Write-ColorOut "$($ToClean[$i].FullName.Replace($InputPath,"."))`t`thas $($ToClean[$i].filecount) files." -ForegroundColor DarkGray
@@ -257,7 +280,8 @@ Function Start-Cleaning(){
             }
             if($confirm -eq 0 -or ($confirm -eq 1 -and (Read-Host "Is that okay? 1 for yes, 0 for no") -eq 1)){
                 try{
-                    Remove-Item -LiteralPath $ToClean[$i].FullName -Recurse -Verbose
+                    Remove-ItemSafely -LiteralPath $ToClean[$i].FullName -Recurse -Verbose
+                    # Remove-Item -LiteralPath $ToClean[$i].FullName -Recurse -Verbose
                 }catch{
                     Write-ColorOut "Removing failed!" -ForegroundColor Magenta
                     $script:errorcounter++
@@ -269,68 +293,123 @@ Function Start-Cleaning(){
     }
 }
 
-Function Start-DocSearch(){
+# DEFINITION: Search for abandoned XMPs and delete them:
+Function Start-XMPcleanup(){
     param(
         [Parameter(Mandatory=$true)]
         [string]$InputPath,
         [Parameter(Mandatory=$true)]
-        [array]$extensions
+        [array]$WorkingFiles
     )
+    Write-ColorOut "$(Get-CurrentDate)  --  Searching for abandoned XMPs and delete them..." -ForegroundColor Cyan
+    $sw = [diagnostics.stopwatch]::StartNew()
 
-    $sw_A = [diagnostics.stopwatch]::StartNew()
-
-    [int]$sw_counter = 0
-    [array]$files = Get-ChildItem -Path $ToClean[$i].FullName -Filter *.xmp -Recurse | ForEach-Object -Process {
-        if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $sw_counter -eq 0){
-            Write-Progress -Activity "Getting folders..." -Status "# $i - $($ToClean[$i].FullName)" -PercentComplete -1
-            $sw_A.Reset()
-            $sw_A.Start()
+    # DEFINITION: Get all XMPs:
+    [array]$XMP = Get-ChildItem -Path $ToClean[$i].FullName -Filter *.xmp -Recurse | ForEach-Object -Begin {
+        [int]$i = 1
+        Write-Progress -Activity "Getting XMPs..." -Status "#$i - $($ToClean[$i].FullName)" -PercentComplete -1
+        $sw.Reset()
+        $sw.Start()
+    } -Process {
+        if($sw.Elapsed.TotalMilliseconds -ge 750){
+            Write-Progress -Activity "Getting XMPs..." -Status "#$i - $($ToClean[$i].FullName)" -PercentComplete -1
+            $sw.Reset()
+            $sw.Start()
         }
-        $sw_counter++
+        $i++
 
         [PSCustomObject]@{
             FullName = $_.FullName
             BaseName = $_.BaseName
+            Directory = Split-Path -Parent -Path $_.FullName
         }
-    } -End {Write-Progress -Activity "Checking XMPs..." -Status "Done" -Completed}
+    } -End {
+        Write-Progress -Activity "Getting XMPs..." -Status "Done" -Completed
+    }
 
-    for($i=0; $i -lt $files.Length; $i++){
-        if($sw_A.Elapsed.TotalMilliseconds -ge 500 -or $i -eq 0){
-            Write-Progress -Activity "Checking XMPs..." -Status "# $i - $($files[$i].FullName)" -PercentComplete -1
-            $sw_A.Reset()
-            $sw_A.Start()
+    [array]$ToClean = @()
+    for($i=0; $i -lt $XMP.Length; $i++){
+        if($sw.Elapsed.TotalMilliseconds -ge 750 -or $i -eq 0){
+            Write-Progress -Activity "Checking XMPs..." -Status "#$($i + 1) - $($XMP[$i].FullName)" -PercentComplete $($($i + 1) * 100 / $XMP.Length)
+            $sw.Reset()
+            $sw.Start()
         }
-        [int]$counter = 0
-        for($j=0; $j -lt $extensions.Length; $j++){
-            [int]$counter += (Get-ChildItem -Path $ToClean[$i].FullName -Filter $extensions[$j]).count
-        }
-        if($counter -lt 1){
-            Write-ColorOut "Only XMP!" -ForegroundColor Red
+
+        if((Compare-Object $XMP[$i] -DifferenceObject $WorkingFiles -Property BaseName,Directory -ExcludeDifferent -IncludeEqual -ErrorAction Stop).count -gt 0){
+            if($script:Debug -gt 0){
+                Write-ColorOut "XMP $($XMP[$i].FullName)`tis not alone." -ForegroundColor Green -Indentation 4
+            }
         }else{
-            Write-ColorOut "XMP with file." -ForegroundColor Green
+            Write-ColorOut "XMP $($XMP[$i].FullName)`tis abandoned!" -ForegroundColor Red -Indentation 4
+            $ToClean += @($XMP[$i].FullName)
         }
     }
     Write-Progress -Activity "Checking XMPs..." -Status "Done" -Completed
-}
 
-Function Start-Everything(){
-    [array]$folder = Start-Searching -InputPath $script:InputPath -catalog_folder $script:catalog_folder -extensions $script:extensions
-    Start-Cleaning -ToClean $folder -InputPath $script:InputPath
-    Start-DocSearch -InputPath $script:InputPath -extensions $script:extensions
-    if($script:errorcounter -le 0){
-        Write-ColorOut "Done without errors!" -ForegroundColor Green
-        Start-Sound -Success 1
-    }else{
-        Write-ColorOut "Done, though $($script:errorcounter) error(s) were encountered." -ForegroundColor Magenta
-        Start-Sound -Success 0
+    if($ToClean.Length -gt 0){
+        Write-ColorOut "Abandoned XMPs found. Delete them?" -ForegroundColor Yellow -Indentation 2
+        [int]$i = 999
+        while($i -notin (0..1)){
+            try{
+                [int]$i = Read-Host
+            }catch{
+                continue
+            }
+        }
+    }
+
+    $ToClean | ForEach-Object -Begin {
+        [int]$i = 1
+        Write-Progress -Activity "Deleting abandoned XMPs..." -Status "#$($i + 1) - $_" -PercentComplete $($i * 100 / $ToClean.Length)
+            $sw.Reset()
+            $sw.Start()
+    } -Process {
+        if($sw.Elapsed.TotalMilliseconds -ge 750){
+            Write-Progress -Activity "Deleting abandoned XMPs..." -Status "#$($i + 1) - $_" -PercentComplete $($i * 100 / $ToClean.Length)
+            $sw.Reset()
+            $sw.Start()
+        }
+        $i++
+
+        Remove-ItemSafely -LiteralPath $_
+    } -End {
+        Write-Progress -Activity "Deleting abandoned XMPs..." -Status "Done" -Completed
     }
 }
 
-if((Test-Path -LiteralPath $InputPath -PathType Container) -eq $false){
-    Write-ColorOut "Folder non-existent!" -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    Exit
-}else{
-    Start-Everything
-    Pause
+# DEFINITION: Start everything:
+Function Start-Everything(){
+    Write-ColorOut "                                              A" -BackgroundColor DarkGray -ForegroundColor DarkGray
+    Write-ColorOut "           flolilo's picture-cleanup           " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "               v1.3 - 2018-02-17               " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "(PID = $("{0:D8}" -f $pid))                               `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+
+    if((Test-Path -LiteralPath $script:InputPath -PathType Container) -eq $false){
+        Write-ColorOut "Folder non-existent!" -ForegroundColor Red
+        Start-Sleep -Seconds 5
+        Exit
+    }
+
+    [array]$WorkingFolders = @(Start-Searching -InputPath $script:InputPath -CatalogFolder $script:CatalogFolder -Extensions $script:Extensions)
+    Invoke-Pause
+
+    Start-Cleaning -ToClean $WorkingFolders -InputPath $script:InputPath
+    Invoke-Pause
+
+    Start-XMPcleanup -InputPath $script:InputPath -WorkingFiles $WorkingFolders
+    Invoke-Pause
+
+    Write-ColorOut "$(Get-CurrentDate)  -" -NoNewLine -ForegroundColor Cyan
+    if($script:errorcounter -le 0){
+        Write-ColorOut "-  Done without errors!" -ForegroundColor Green
+        Start-Sound -Success 1
+        Start-Sleep -Seconds 1
+    }else{
+        Write-ColorOut "-  Done, though $($script:errorcounter) error(s) were encountered." -ForegroundColor Magenta
+        Start-Sound -Success 0
+        Start-Sleep -Seconds 5
+    }
+    Invoke-Pause
 }
+
+Start-Everything
