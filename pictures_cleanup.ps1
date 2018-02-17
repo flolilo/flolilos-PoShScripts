@@ -1,5 +1,6 @@
 #requires -version 3
 
+# TODO: TODO: Proper documentation, Remove-ItemSafely TODO: TODO:
 <#
     .SYNOPSIS
         Deletes subfolders that don't contain specified extensions
