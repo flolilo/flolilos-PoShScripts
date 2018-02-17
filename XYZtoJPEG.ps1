@@ -6,8 +6,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    2.0
-        Date:       2018-02-16
+        Version:    2.1
+        Date:       2018-02-17
         Author:     flolilo
 
     .INPUTS
@@ -18,20 +18,28 @@
     .PARAMETER InputPath
         Path to convert files from. Or file(s).
     .PARAMETER Formats
-        All formats to process.
+        All formats to process, e.g. @("*.jpg","*.tif")
     .PARAMETER Quality
         JPEG quality. See ImageMagick's CLI options for that.
-    .PARAMETER RemoveTIF
-        1 enables, 0 disables.
+    .PARAMETER RemoveSource
+        1 enables (default), 0 disables.
         Remove TIFs to Recycle Bin after conversion.
+    .PARAMETER ConvertToSRGB
+        1 enables, 0 disables (default).
+        Convert files to sRGB - could lead to (slight) color shifts!
+    .PARAMETER Scaling
+        Scaling of picture with Lancos filter. Valid values: 1-100, default: 100 (no scaling).
     .PARAMETER EXIFtool
         Path to exiftool.exe.
     .PARAMETER Magick
         Path to magick.exe.
     .PARAMETER ThreadCount
-        Thread-Count for conversion and metadata-copying. Valid range: 1-48.
+        Thread-Count for conversion. Valid range: 1-48.
     .PARAMETER Debug
         Stops after each step.
+
+    .EXAMPLE
+        XYZtoJPEG -InputPath D:\MyImages -Formats @("*.jpg","*.tif") -Quality 70 -RemoveSource 0 -ConvertToSRGB 0
 #>
 param(
     [array]$InputPath =         @("$((Get-Location).Path)"),
@@ -42,6 +50,8 @@ param(
     [int]$RemoveSource =        1,
     [ValidateRange(0,1)]
     [int]$ConvertToSRGB =       0,
+    [ValidateRange(1,100)]
+    [int]$Scaling =             100,
     [string]$EXIFtool =         "$($PSScriptRoot)\exiftool.exe",
     [string]$Magick =           "$($PSScriptRoot)\ImageMagick\magick.exe",
     [ValidateRange(1,48)]
@@ -316,6 +326,8 @@ Function Start-Converting(){
         [Parameter(Mandatory=$true)]
         [int]$ConvertToSRGB,
         [Parameter(Mandatory=$true)]
+        [int]$Scaling,
+        [Parameter(Mandatory=$true)]
         [string]$Magick,
         [Parameter(Mandatory=$true)]
         [int]$ThreadCount
@@ -346,6 +358,9 @@ Function Start-Converting(){
         [string]$ArgList = "convert -quality $Quality -depth 8 `"$($_.SourceFullName)`""
         if($ConvertToSRGB -eq 1){
             $ArgList += " -profile `"C:\Windows\System32\spool\drivers\color\sRGB Color Space Profile.icm`" -colorspace sRGB"
+        }
+        if($Scaling -ne 100){
+            $ArgList += " -filter Lanczos -resize $Scaling%"   
         }
         $ArgList += " -quiet `"$($_.JPEGFullName)`""
 
@@ -416,7 +431,7 @@ Function Start-Transfer(){
     Write-Progress -Activity "Transfering metadata..." -Status "Complete!" -Completed
 
     for($i=0; $i -lt $WorkingFiles.length; $i++){
-        Write-ColorOut "$($WorkingFiles[$i].SourceName):`t" -ForegroundColor Gray -NoNewLine
+        Write-ColorOut "$($WorkingFiles[$i].SourceName):`t" -ForegroundColor Gray -NoNewLine -Indentation 2
         if($outputerror[$i].Length -gt 0){
             Write-ColorOut "$($outputerror[$i])`t" -ForegroundColor Red -NoNewline
         }
@@ -479,7 +494,7 @@ Function Start-Everything(){
         }
     }
 
-    Start-Converting -WorkingFiles $WorkingFiles -Quality $script:Quality -ConvertToSRGB $script:ConvertToSRGB -Magick $script:Magick -ThreadCount $script:ThreadCount
+    Start-Converting -WorkingFiles $WorkingFiles -Quality $script:Quality -ConvertToSRGB $script:ConvertToSRGB -Scaling $script:Scaling -Magick $script:Magick -ThreadCount $script:ThreadCount
     Invoke-Pause
 
     Start-Transfer -WorkingFiles $WorkingFiles -EXIFtool $script:EXIFtool
