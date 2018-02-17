@@ -8,18 +8,18 @@
     .NOTES
         Version:        2.1
         Author:         flolilo
-        Creation Date:  2018-02-16
+        Creation Date:  2018-02-17
 
     .INPUTS
-        exiftool.exe
-        (optional) exif_tool_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters).
+        (optional) exif_tool_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters),
+        files.
     .OUTPUTS
-        none.
+        the same files.
 
     .PARAMETER InputPath
         Path where images should be searched and edited (default: current path of console). Or file(s).
     .PARAMETER Formats
-        All formats to process.
+        All formats to process, e.g. @("*.jpg","*.tif")
     .PARAMETER DeleteAllMeta
         Deleting all metadata or just some never used ones (like software).
     .PARAMETER AddCopyright
@@ -30,13 +30,13 @@
         Name of artist. If both -ArtistName and -CopyrightText are empty (which they are by default), values will be taken from the JSON-file.
     .PARAMETER CopyrightText
         Copyright-information you want to add. If both -ArtistName and -CopyrightText are empty (which they are by default), values will be taken from the JSON-file.
-    .PARAMETER Encoder
+    .PARAMETER EXIFtool
         Path to exiftool.exe.
     .PARAMETER Debug
         Add a bit of verbose information about variables.
 
     .EXAMPLE
-        exif_tool -AddCopyright 1 -ArtistName "John Doe" -CopyrightText "2017, by John Doe." -Encoder "C:\exiftool.exe"
+        exif_tool -AddCopyright 1 -ArtistName "John Doe" -CopyrightText "2017, by John Doe." -EXIFtool "C:\exiftool.exe"
 #>
 param(
     [array]$InputPath =         @("$((Get-Location).Path)"),
@@ -378,7 +378,7 @@ Function Start-EXIFtool(){
     Write-Progress -Activity "EXIFtool" -Status "Complete!" -Completed
 
     for($i=0; $i -lt $WorkingFiles.length; $i++){
-        Write-ColorOut "$($WorkingFiles[$i]):`t" -ForegroundColor Gray -NoNewLine
+        Write-ColorOut "$($WorkingFiles[$i]):`t" -ForegroundColor Gray -NoNewLine -Indentation 2
         if($outputerror[$i].Length -gt 0){
             Write-ColorOut "$($outputerror[$i])`t" -ForegroundColor Red -NoNewline
         }
