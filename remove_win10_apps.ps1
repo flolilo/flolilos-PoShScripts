@@ -497,7 +497,7 @@ Function Start-Everything(){
                 }
                 if(($check -eq 1 -and $i.Useless -in (0..1)) -or ($check -eq 2 -and $i.Useless -ne -1)){
                     try{
-                        Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage -AllUsers -Verbose:$script:WantVerbose -WhatIf:$script:WantWhatIf -ErrorAction Stop
+                        Get-AppxPackage -AllUsers "$($i.AppName)" | Remove-AppxPackage -Verbose:$script:WantVerbose -WhatIf:$script:WantWhatIf -ErrorAction Stop
                         Write-ColorOut "Removing $($i.ClearName) succeeded." -ForegroundColor DarkGreen -Indentation 4
                     }catch{
                         Write-ColorOut "Removing $($i.ClearName) failed!" -ForegroundColor Magenta -Indentation 4
