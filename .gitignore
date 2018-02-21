@@ -4,7 +4,7 @@
 *.pdf
 *.csv
 *.xlsx
-*.json
+# *.json
 /movies/*
 
 # DEFINITION: ignore file that's in the repo
