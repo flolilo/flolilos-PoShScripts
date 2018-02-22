@@ -324,11 +324,9 @@ Function Start-Upload(){
         [string]$Catalog_Path = $script:LR_path
     }
 
-    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
+    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $Catalog_Path -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red -Indentation 4
-        Start-Sound -Success 0
-        Start-Sleep -Seconds 5
-        Exit
+        return $false
     }else{
         if($script:Delete -ne 0){
             Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan -Indentation 4
@@ -339,8 +337,11 @@ Function Start-Upload(){
         Start-Sleep -Milliseconds 250
         Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan -Indentation 4
         [string]$archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
+        Pause
         Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$script:server_path\$archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
     }
+
+    return $true
 }
 
 Function Start-Download(){
@@ -355,11 +356,9 @@ Function Start-Download(){
         [string]$Catalog_Path = $script:LR_path
     }
     
-    if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
+    if((Test-Path -LiteralPath $script:server_path -PathType Container) -ne $true -or (Test-Path -LiteralPath $Catalog_Path -PathType Container) -ne $true){
         Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red -Indentation 4
-        Start-Sound -Success 0
-        Start-Sleep -Seconds 5
-        Exit
+        return $false
     }else{
         if($script:backup_existing -eq 1){
             Write-ColorOut "Backing up existing files in $Catalog_Path ..." -ForegroundColor Cyan -Indentation 4
@@ -392,7 +391,7 @@ Function Start-Download(){
         }elseif($archive.Length -lt 1){
             Write-ColorOut "No $catalogname-backups found - aborting!" -ForegroundColor Red -Indentation 4
             Pause
-            Exit
+            return $false
         }
 
         Write-ColorOut "Deleting existing files in $Catalog_Path ..." -ForegroundColor Cyan
@@ -405,6 +404,8 @@ Function Start-Download(){
         $inter = Split-Path -Path $Catalog_Path -Parent
         Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$inter`" $script:7z_down_suffix" -NoNewWindow -Wait
     }
+
+    return $true
 }
 
 Function Start-Everything(){
@@ -425,9 +426,19 @@ Function Start-Everything(){
 
     for($i=0; $i -lt $script:toProcess.Length; $i++){
         if($script:upDown -eq "up"){  
-            Start-Upload -catalogname $script:toProcess[$i]
+            if((Start-Upload -catalogname $script:toProcess[$i]) -eq $false){
+                Write-ColorOut "Error in uploading $($script:toProcess[$i])!" -ForegroundColor Red -Indentation 4
+                Start-Sound -Success 0
+                Start-Sleep -Seconds 5
+            }
+            Start-Sleep -Milliseconds 50
         }elseif($script:upDown -eq "down"){
-            Start-Download -catalogname $script:toProcess[$i]
+            if((Start-Download -catalogname $script:toProcess[$i]) -eq $false){
+                Write-ColorOut "Error in downloading $($script:toProcess[$i])!" -ForegroundColor Red -Indentation 4
+                Start-Sound -Success 0
+                Start-Sleep -Seconds 5
+            }
+            Start-Sleep -Milliseconds 50
         }
     }
 

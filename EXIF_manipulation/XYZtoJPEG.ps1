@@ -183,6 +183,22 @@ Function Invoke-Pause(){
     }
 }
 
+# DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
+Function Invoke-Close(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$PSPID
+    )
+    Write-ColorOut "Exiting - This could take some seconds. Please do not close this window!" -ForegroundColor Magenta
+    if($PSPID -ne 999999999){
+        Stop-Process -Id $PSPID -ErrorAction SilentlyContinue
+    }
+    if($script:Debug -gt 0){
+        Pause
+    }
+    Exit
+}
+
 # DEFINITION: Start equivalent to PreventSleep.ps1:
 Function Invoke-PreventSleep(){
     <#
@@ -507,6 +523,7 @@ Function Start-Recycling(){
     }
 }
 
+
 # DEFINITION: Start everything:
 Function Start-Everything(){
     Write-ColorOut "                                              A" -BackgroundColor DarkGray -ForegroundColor DarkGray
@@ -514,16 +531,15 @@ Function Start-Everything(){
     Write-ColorOut "               v2.2 - 2018-02-22               " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "(PID = $("{0:D8}" -f $pid))                               `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 
+    [int]$preventstandbyid = 999999999
     [int]$preventstandbyid = Invoke-PreventSleep
     if((Test-UserValues) -eq $false){
-        Invoke-Pause
-        Exit
+        Invoke-Close -PSPID $preventstandbyid
     }else{
         Invoke-Pause
         $WorkingFiles = Get-InputFiles -InputPath $script:InputPath -Formats $script:Formats
         if($WorkingFiles -eq $false){
-            Invoke-Pause
-            Exit
+            Invoke-Close -PSPID $preventstandbyid
         }else{
             Invoke-Pause
         }

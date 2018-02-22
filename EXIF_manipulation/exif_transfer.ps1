@@ -157,6 +157,22 @@ Function Invoke-Pause(){
     }
 }
 
+# DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
+Function Invoke-Close(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [int]$PSPID
+    )
+    Write-ColorOut "Exiting - This could take some seconds. Please do not close this window!" -ForegroundColor Magenta
+    if($PSPID -ne 999999999){
+        Stop-Process -Id $PSPID -ErrorAction SilentlyContinue
+    }
+    if($script:Debug -gt 0){
+        Pause
+    }
+    Exit
+}
+
 # DEFINITION: Start equivalent to PreventSleep.ps1:
 Function Invoke-PreventSleep(){
     <#
@@ -356,10 +372,10 @@ Function Start-Everything(){
     Write-ColorOut "               v2.1 - 2018-02-22               " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "(PID = $("{0:D8}" -f $pid))                               `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 
+    [int]$preventstandbyid = 999999999
     [int]$preventstandbyid = Invoke-PreventSleep
     if((Test-UserValues) -eq $false){
-        Invoke-Pause
-        Exit
+        Invoke-Close -PSPID $preventstandbyid
     }
     Invoke-Pause
 
@@ -368,8 +384,7 @@ Function Start-Everything(){
         Write-ColorOut "No files found!" -ForegroundColor Magenta
         Start-Sound -Success 1
         Start-Sleep -Seconds 5
-        Invoke-Pause
-        Exit
+        Invoke-Close -PSPID $preventstandbyid
     }
     Write-ColorOut "Continue?`t" -ForegroundColor Yellow -NoNewLine -Indentation 2
     Pause
