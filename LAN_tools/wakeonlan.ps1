@@ -106,11 +106,6 @@ Function Get-CurrentDate(){
 # ==============================================================================
 # ==================================================================================================
 
-Write-ColorOut "                                  A" -BackgroundColor DarkGray -ForegroundColor DarkGray
-Write-ColorOut "        flolilo's WOLscript        " -ForegroundColor DarkCyan -BackgroundColor Gray
-Write-ColorOut "         v1.2 - 2018-01-27         " -ForegroundColor DarkCyan -BackgroundColor Gray
-Write-ColorOut "(PID = $("{0:D8}" -f $pid))                   `r`n`r`n`r`n" -ForegroundColor Gray -BackgroundColor DarkGray
-
 # DEFINITION: Get JSON values:
 Function Get-Values(){
     Write-ColorOut "$(Get-CurrentDate)  --  Finding values..." -ForegroundColor Cyan
@@ -162,6 +157,7 @@ Function Start-WOL(){
     }
     Write-Progress -Activity "Pinging/waking server..." -Status "Done!" -Completed
 }
+
 
 Function Start-Everything(){
     Write-ColorOut "                                  A" -BackgroundColor DarkGray -ForegroundColor DarkGray
