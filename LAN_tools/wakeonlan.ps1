@@ -6,8 +6,8 @@
     .DESCRIPTION
         CREDIT: wolcmd by https://www.depicus.com/wake-on-lan/wake-on-lan-cmd
     .NOTES
-        Version:    1.2
-        Date:       2018-01-27
+        Version:    1.3
+        Date:       2018-02-22
         Author:     flolilo
 #>
 param(
@@ -95,6 +95,10 @@ Function Write-ColorOut(){
     }
 }
 
+# DEFINITION: Getting date and time in pre-formatted string:
+Function Get-CurrentDate(){
+    return $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+}
 
 # ==================================================================================================
 # ==============================================================================
@@ -103,14 +107,15 @@ Function Write-ColorOut(){
 # ==================================================================================================
 
 Write-ColorOut "                                                                                      A" -BackgroundColor DarkGray -ForegroundColor DarkGray
-Write-ColorOut "                            flolilo's WOLscript                            " -ForegroundColor DarkCyan -BackgroundColor Gray
-Write-ColorOut "                                  v1.2 - 2018-01-27                                  " -ForegroundColor DarkCyan -BackgroundColor Gray
-Write-ColorOut "(PID = $("{0:D8}" -f $pid))                                                                       `r`n`r`n`r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+Write-ColorOut "        flolilo's WOLscript        " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "         v1.2 - 2018-01-27         " -ForegroundColor DarkCyan -BackgroundColor Gray
+Write-ColorOut "(PID = $("{0:D8}" -f $pid))        `r`n`r`n`r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 
 # DEFINITION: Get JSON values:
 Function Get-Values(){
-    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Finding values..." -ForegroundColor Cyan
-    [array]$script:WOL = @((0..100) | ForEach-Object {
+    Write-ColorOut "$(Get-CurrentDate)  --  Finding values..." -ForegroundColor Cyan
+    # DEFINITION: If you have more than 11 servers to check (I somehow find that unlikely), then turn up (0..10) to (0..999) or whatever you like!
+    [array]$script:WOL = @((0..10) | ForEach-Object {
         [PSCustomObject]@{
             Name = "ZYX"
             MACaddress = "ZYX"
@@ -144,14 +149,14 @@ Function Get-Values(){
 
 # DEFINITION: Ping and WOL:
 Function Start-WOL(){
-    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Pinging/waking server(s)..." -ForegroundColor Cyan
+    Write-ColorOut "$(Get-CurrentDate)  --  Pinging/waking server(s)..." -ForegroundColor Cyan
 
     for($i=0; $i -lt $script:WOL.Count; $i++){
         Write-Progress -Activity "Pinging server(s)..." -Status "# $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`"" -PercentComplete $((($i + 1) * 100) / $script:WOL.Count)
         if((Test-Connection -ComputerName $script:WOL[$i].IPaddress -Buffer 16 -TimeToLive 2 -Delay 1 -Count 2 -Quiet) -eq $true){
-            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" already running!" -ForegroundColor DarkGreen -Indentation 4
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" is already running!" -ForegroundColor Green -Indentation 4
         }else{
-            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" not running - waking up..." -ForegroundColor Yellow -Indentation 4
+            Write-ColorOut "Server $($i + 1)/$($script:WOL.Count) - `"$($script:WOL[$i].Name)`" is not running - waking up..." -ForegroundColor Yellow -Indentation 4
             Start-Process -FilePath $script:WOLcmdPath -ArgumentList "$($script:WOL[$i].MACaddress) $($script:WOL[$i].IPaddress) 255.255.255.0 7" -NoNewWindow -Wait
         }
     }
@@ -168,8 +173,8 @@ Function Start-Everything(){
     Get-Values
     Start-WOL
  
-    Write-ColorOut "$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")  --  Done!" -ForegroundColor Green
-    Start-Sleep -Milliseconds 500
+    Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
+    Start-Sleep -Seconds 2
 }
 
 Start-Everything
