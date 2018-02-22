@@ -10,6 +10,5 @@
 # DEFINITION: ignore file that's in the repo
 # CREDIT: https://www.git-scm.com/docs/git-update-index
 # CREDIT: https://stackoverflow.com/a/7232354/8013879
-# git update-index --assume-unchanged .\exif_tool_vars.json
-# git update-index --assume-unchanged .\wakeonlan.json
+# git update-index --assume-unchanged .\LAN_tools\wakeonlan.json
 
