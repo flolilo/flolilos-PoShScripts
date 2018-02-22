@@ -183,9 +183,11 @@ Function Invoke-PreventSleep(){
     Write-ColorOut "$(Get-CurrentDate)  --  Starting preventsleep-script..." -ForegroundColor Cyan
 
 $standby = @'
+    # DEFINITION: For button-emulation:
     Write-Host "(PID = $("{0:D8}" -f $pid))" -ForegroundColor Gray
     $MyShell = New-Object -ComObject "Wscript.Shell"
     while($true){
+        # DEFINITION:/CREDIT: https://superuser.com/a/1023836/703240
         $MyShell.sendkeys("{F15}")
         Start-Sleep -Seconds 90
     }
