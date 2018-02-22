@@ -6,8 +6,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    2.1
-        Date:       2018-02-17
+        Version:    2.2
+        Date:       2018-02-22
         Author:     flolilo
 
     .INPUTS
@@ -181,6 +181,38 @@ Function Invoke-Pause(){
     if($script:Debug -ne 0){
         Pause
     }
+}
+
+# DEFINITION: Start equivalent to PreventSleep.ps1:
+Function Invoke-PreventSleep(){
+    <#
+        .NOTES
+            v1.0 - 2018-02-22
+    #>
+    Write-ColorOut "$(Get-CurrentDate)  --  Starting preventsleep-script..." -ForegroundColor Cyan
+
+$standby = @'
+    Write-Host "(PID = $("{0:D8}" -f $pid))" -ForegroundColor Gray
+    $MyShell = New-Object -ComObject "Wscript.Shell"
+    while($true){
+        $MyShell.sendkeys("{F15}")
+        Start-Sleep -Seconds 90
+    }
+'@
+    $standby = [System.Text.Encoding]::Unicode.GetBytes($standby)
+    $standby = [Convert]::ToBase64String($standby)
+
+    [int]$preventstandbyid = (Start-Process powershell -ArgumentList "-EncodedCommand $standby" -WindowStyle Hidden -PassThru).Id
+    if($script:Debug -gt 0){
+        Write-ColorOut "preventsleep-PID is $("{0:D8}" -f $preventstandbyid)" -ForegroundColor Gray -BackgroundColor DarkGray -Indentation 4
+    }
+    Start-Sleep -Milliseconds 25
+    if((Get-Process -Id $preventstandbyid -ErrorVariable SilentlyContinue).count -ne 1){
+        Write-ColorOut "Cannot prevent standby" -ForegroundColor Magenta -Indentation 4
+        Start-Sleep -Seconds 3
+    }
+
+    return $preventstandbyid
 }
 
 # DEFINITION: Getting date and time in pre-formatted string:
@@ -477,9 +509,10 @@ Function Start-Recycling(){
 Function Start-Everything(){
     Write-ColorOut "                                              A" -BackgroundColor DarkGray -ForegroundColor DarkGray
     Write-ColorOut "        flolilo's XYZ to JPEG converter        " -ForegroundColor DarkCyan -BackgroundColor Gray
-    Write-ColorOut "               v2.0 - 2018-02-16               " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "               v2.2 - 2018-02-22               " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "(PID = $("{0:D8}" -f $pid))                               `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 
+    [int]$preventstandbyid = Invoke-PreventSleep
     if((Test-UserValues) -eq $false){
         Invoke-Pause
         Exit
@@ -504,6 +537,8 @@ Function Start-Everything(){
         Start-Recycling -WorkingFiles $WorkingFiles
         Invoke-Pause
     }
+
+    Stop-Process -Id $preventstandbyid -Verbose
 
     Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
     Start-Sound -Success 1

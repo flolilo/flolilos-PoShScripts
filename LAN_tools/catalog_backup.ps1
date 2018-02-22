@@ -6,9 +6,9 @@
     .DESCRIPTION
         Using 7z to fastly archive the catalog(s) to the backup-location, using robocopy to download the archive from the backup-location.
     .NOTES
-        Version:        0.4
+        Version:        1.2
         Author:         flolilo
-        Creation Date:  2017-10-24
+        Creation Date:  2018-02-22
 
     .INPUTS
         (optional) catalog_backup_vars.json (encoded in UTF8).
@@ -174,6 +174,43 @@ Function Start-Sound(){
     }
 }
 
+# DEFINITION: Start equivalent to PreventSleep.ps1:
+Function Invoke-PreventSleep(){
+    <#
+        .NOTES
+            v1.0 - 2018-02-22
+    #>
+    Write-ColorOut "$(Get-CurrentDate)  --  Starting preventsleep-script..." -ForegroundColor Cyan
+
+$standby = @'
+    Write-Host "(PID = $("{0:D8}" -f $pid))" -ForegroundColor Gray
+    $MyShell = New-Object -ComObject "Wscript.Shell"
+    while($true){
+        $MyShell.sendkeys("{F15}")
+        Start-Sleep -Seconds 90
+    }
+'@
+    $standby = [System.Text.Encoding]::Unicode.GetBytes($standby)
+    $standby = [Convert]::ToBase64String($standby)
+
+    [int]$preventstandbyid = (Start-Process powershell -ArgumentList "-EncodedCommand $standby" -WindowStyle Hidden -PassThru).Id
+    if($script:Debug -gt 0){
+        Write-ColorOut "preventsleep-PID is $("{0:D8}" -f $preventstandbyid)" -ForegroundColor Gray -BackgroundColor DarkGray -Indentation 4
+    }
+    Start-Sleep -Milliseconds 25
+    if((Get-Process -Id $preventstandbyid -ErrorVariable SilentlyContinue).count -ne 1){
+        Write-ColorOut "Cannot prevent standby" -ForegroundColor Magenta -Indentation 4
+        Start-Sleep -Seconds 3
+    }
+
+    return $preventstandbyid
+}
+
+# DEFINITION: Getting date and time in pre-formatted string:
+Function Get-CurrentDate(){
+    return $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+}
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -183,6 +220,8 @@ Function Start-Sound(){
 
 # DEFINITION: Get user-values:
 Function Get-UserValues(){
+    Write-ColorOut "$(Get-CurrentDate)  --  Getting uservalues..." -ForegroundColor Cyan
+
     if($script:upDown -ne "up" -and $script:upDown -ne "down"){
         while($true){
             [string]$script:upDown = Read-Host "Upload or download catalog(s)?"
@@ -272,7 +311,11 @@ Function Get-UserValues(){
 }
 
 Function Start-Upload(){
-    param([string]$catalogname)
+    param(
+        [string]$catalogname
+    )
+    Write-ColorOut "$(Get-CurrentDate)  --  Starting upload..." -ForegroundColor Cyan
+
     if($catalogname -eq "C1"){
         [string]$Catalog_Path = $script:C1_path
     }elseif($catalogname -eq "LR"){
@@ -280,26 +323,30 @@ Function Start-Upload(){
     }
 
     if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
-        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
+        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red -Indentation 4
         Start-Sound -Success 0
         Start-Sleep -Seconds 5
         Exit
     }else{
         if($script:Delete -ne 0){
-            Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+            Write-ColorOut "Scanning for and removing old $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan -Indentation 4
             Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
                 Remove-Item $_.FullName -Confirm:$script:confirm
             }
         }
         Start-Sleep -Milliseconds 250
-        Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan
+        Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan -Indentation 4
         [string]$archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
         Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$script:server_path\$archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
     }
 }
 
 Function Start-Download(){
-    param([string]$catalogname)
+    param(
+        [string]$catalogname
+    )
+    Write-ColorOut "$(Get-CurrentDate)  --  Starting download..." -ForegroundColor Cyan
+
     if($catalogname -eq "C1"){
         [string]$Catalog_Path = $script:C1_path
     }elseif($catalogname -eq "LR"){
@@ -307,18 +354,18 @@ Function Start-Download(){
     }
     
     if((Test-Path -LiteralPath "$script:server_path" -PathType Container) -ne $true -or (Test-Path -LiteralPath "$Catalog_Path" -PathType Container) -ne $true){
-        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red
+        Write-ColorOut "Path(s) not available - aborting script!" -ForegroundColor Red -Indentation 4
         Start-Sound -Success 0
         Start-Sleep -Seconds 5
         Exit
     }else{
         if($script:backup_existing -eq 1){
-            Write-ColorOut "Backing up existing files in $Catalog_Path ..." -ForegroundColor Cyan
+            Write-ColorOut "Backing up existing files in $Catalog_Path ..." -ForegroundColor Cyan -Indentation 4
             [string]$backup_archive_name = "_BACKUP_-_PicCat_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
             Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$Catalog_Path\$backup_archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
         }
 
-        Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan
+        Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan -Indentation 4
         [array]$archive = Get-ChildItem -Path "$script:server_path\_Picture_Catalog_$($catalogname)_*" -Filter *.7z -File | ForEach-Object {
             [PSCustomObject]@{
                 FullPath = $_.FullName
@@ -328,20 +375,20 @@ Function Start-Download(){
         if($archive.Length -gt 1){
             $archive = $archive | Sort-Object -Property Name -Descending
             $archive | Out-Null
-            Write-ColorOut "More than one $catalogname-backup found:" -ForegroundColor Magenta
+            Write-ColorOut "More than one $catalogname-backup found:" -ForegroundColor Magenta -Indentation 4
             for($i=0; $i -lt $archive.Length; $i++){
-                Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow
+                Write-ColorOut "$i`t- $($archive[$i].name)" -ForegroundColor Yellow -Indentation 4
             }
             [int]$select = ($archive.Length + 10)
             while($select -notin (0..($archive.Length -1))){
                 [int]$select = Read-Host "Which one to use?"
             }
             $archive = $archive[$select]
-            Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan
-            Write-ColorOut $archive.name
+            Write-ColorOut "Only using " -NoNewLine -ForegroundColor Cyan -Indentation 4
+            Write-ColorOut $archive.name -Indentation 4
             Pause
         }elseif($archive.Length -lt 1){
-            Write-ColorOut "No $catalogname-backups found - aborting!" -ForegroundColor Red
+            Write-ColorOut "No $catalogname-backups found - aborting!" -ForegroundColor Red -Indentation 4
             Pause
             Exit
         }
@@ -359,23 +406,19 @@ Function Start-Download(){
 }
 
 Function Start-Everything(){
-    if((Test-Path -Path "$($PSScriptRoot)\preventsleep.ps1" -PathType Leaf) -eq $true){
-        $preventstandbyid = (Start-Process powershell -ArgumentList "$($PSScriptRoot)\preventsleep.ps1 -Mode none -Shutdown 0" -WindowStyle Hidden -PassThru).Id
-        if($script:Debug -gt 0){
-            Write-ColorOut "preventsleep-ID is $preventstandbyid" -ForegroundColor Magenta -BackgroundColor DarkGray
-        }
-    }else{
-        Write-Host "Couldn't find .\preventsleep.ps1, so can't prevent standby." -ForegroundColor Magenta
-        Start-Sleep -Seconds 3
-    }
+    Write-ColorOut "                                          A" -BackgroundColor DarkGray -ForegroundColor DarkGray
+    Write-ColorOut "        flolilo's catalog backupper        " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "             v1.2 - 2018-02-22             " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "(PID = $("{0:D8}" -f $pid))                           `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
 
+    [int]$preventstandbyid = Invoke-PreventSleep
     Get-UserValues
 
-    Write-ColorOut "-upDown`t`t=`t$script:upDown" -ForegroundColor Yellow
-    Write-ColorOut "-toProcess`t=`t$script:toProcess" -ForegroundColor Yellow
-    Write-ColorOut "-LR_path`t=`t$script:LR_path" -ForegroundColor Yellow
-    Write-ColorOut "-C1_path`t=`t$script:C1_path" -ForegroundColor Yellow
-    Write-ColorOut "-server_path`t=`t$script:server_path" -ForegroundColor Yellow
+    Write-ColorOut "-upDown`t`t=`t$script:upDown" -ForegroundColor Yellow -Indentation 4
+    Write-ColorOut "-toProcess`t=`t$script:toProcess" -ForegroundColor Yellow -Indentation 4
+    Write-ColorOut "-LR_path`t=`t$script:LR_path" -ForegroundColor Yellow -Indentation 4
+    Write-ColorOut "-C1_path`t=`t$script:C1_path" -ForegroundColor Yellow -Indentation 4
+    Write-ColorOut "-server_path`t=`t$script:server_path" -ForegroundColor Yellow -Indentation 4
     Start-Sleep -Seconds 5
 
     for($i=0; $i -lt $script:toProcess.Length; $i++){
@@ -386,8 +429,9 @@ Function Start-Everything(){
         }
     }
 
-    Stop-Process -Id $preventstandbyid
+    Stop-Process -Id $preventstandbyid -Verbose
 
+    Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
     Start-Sound -Success 1
     Pause
 }
