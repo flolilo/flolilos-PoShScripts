@@ -12,8 +12,8 @@
 #>
 param(
     [string]$InputFile =    "$($PSScriptRoot)\wakeonlan.json",
-    [string]$IPaddress = "",
-    [string]$MACaddress = "",
+    [string]$IPaddress =    "",
+    [string]$MACaddress =   "",
     [string]$WOLcmdPath =   "C:\FFMPEG\binaries\WolCmd.exe"
 )
 
