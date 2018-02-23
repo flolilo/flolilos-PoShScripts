@@ -299,7 +299,7 @@ Function Get-UserValues(){
     }
     if($script:Delete -notin (0..2)){
         while($true){
-            [int]$script:Delete = Read-Host "Delete old archives / folders? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
+            [int]$script:Delete = Read-Host "Delete old archives (up) / folders (down)? (2 = yes, 1 = yes w/ confirmation, 0 = no)"
             if($script:Delete -notin (0..2)){
                 Write-ColorOut "Invalid input." -ForegroundColor Magenta -Indentation 4
                 continue
@@ -394,12 +394,12 @@ Function Start-Download(){
             return $false
         }
 
-        Write-ColorOut "Deleting existing files in $Catalog_Path ..." -ForegroundColor Cyan
+        Write-ColorOut "Deleting existing files in $Catalog_Path ..." -ForegroundColor Cyan -Indentation 4
         # Deleting old catalog-files on computer:
         Get-ChildItem -Path $Catalog_Path -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm -Recurse
         Get-ChildItem -Path $Catalog_Path -Recurse -Directory | Remove-Item -Confirm:$confirm -Recurse
 
-        Write-ColorOut "Starting Copying..." -ForegroundColor Cyan
+        Write-ColorOut "Starting Copying..." -ForegroundColor Cyan -Indentation 4
         # DEFINITION: $inter tries to prevent dooubling up of catalog-path (e.g. catc1/catc1/ instead of catc1/)
         $inter = Split-Path -Path $Catalog_Path -Parent
         Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_down_prefix `"$($archive.fullpath)`" `"-o$inter`" $script:7z_down_suffix" -NoNewWindow -Wait
