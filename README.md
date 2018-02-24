@@ -6,7 +6,7 @@ Of course, some of them could potentially do nasty things, especially since they
 
 Below is a list of folders that tries to sort the scripts in some general categories and the name of the scripts at hand, including a small description:
 
-## [EXIF_manipulation](./EXIF_manipulation)
+## [EXIF manipulation](./EXIF_manipulation)
 
 These tools use [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/).
 
@@ -22,7 +22,7 @@ Transfer EXIF information from one file to another.
 
 Use [ImageMagick](https://www.imagemagick.org/) to convert TIFs to JPEGs - and save all metadata.
 
-## [ffmpeg_tools](./ffmpeg_tools)
+## [ffmpeg tools](./ffmpeg_tools)
 
 These tools (mostly) use [FFmpeg](https://ffmpeg.org/).
 
@@ -58,7 +58,7 @@ Split a (quadscreen-)video into parts.
 
 Transcode non-MP3-files to MP3.
 
-## [file_tools](./file_tools)
+## [file tools](./file_tools)
 
 Tools that re-sort, delete, clean up, ... folders.
 
@@ -82,7 +82,7 @@ Clean up (sub)folders with unneeded files (e.g. SideCar-files).
 
 Powershell-implementation of [`tree`](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb491019(v=technet.10)).
 
-## [LAN_tools](./LAN_tools)
+## [LAN tools](./LAN_tools)
 
 Tools that work around my network.
 
@@ -106,7 +106,7 @@ _**Not** a PowerShell-script, but a Bash-script._ Make backups of a complete MyS
 
 Wakes server(s) up if they are not yet running, using [wolcmd](https://www.depicus.com/wake-on-lan/wake-on-lan-cmd).
 
-## [system_tools](./system_tools)
+## [system tools](./system_tools)
 
 Tools that interact with Windows.
 
