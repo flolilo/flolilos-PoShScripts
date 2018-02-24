@@ -11,4 +11,5 @@
 # CREDIT: https://www.git-scm.com/docs/git-update-index
 # CREDIT: https://stackoverflow.com/a/7232354/8013879
 # git update-index --assume-unchanged .\LAN_tools\wakeonlan.json
-
+# git update-index --assume-unchanged .\LAN_tools\automount_smb_vars.json
+# git update-index --assume-unchanged .\LAN_tools\catalog_backup_vars.json
