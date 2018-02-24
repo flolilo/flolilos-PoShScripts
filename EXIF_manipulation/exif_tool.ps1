@@ -6,9 +6,9 @@
     .DESCRIPTION
         Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
     .NOTES
-        Version:        2.2
+        Version:        2.3
         Author:         flolilo
-        Creation Date:  2018-02-22
+        Creation Date:  2018-02-24
 
     .INPUTS
         (optional) exif_tool_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters),
@@ -53,9 +53,11 @@ param(
 )
 
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+# DEFINITION: version number:
+    $VersionNumber = "v2.3 - 2018-02-24"
 
 
 # ==================================================================================================
@@ -185,6 +187,8 @@ Function Invoke-Close(){
     if($script:Debug -gt 0){
         Pause
     }
+
+    $Host.UI.RawUI.WindowTitle = "Windows PowerShell"
     Exit
 }
 
@@ -440,8 +444,9 @@ Function Start-EXIFtool(){
 Function Start-Everything(){
     Write-ColorOut "                                  A" -BackgroundColor DarkGray -ForegroundColor DarkGray
     Write-ColorOut "        flolilo's EXIF-tool        " -ForegroundColor DarkCyan -BackgroundColor Gray
-    Write-ColorOut "         v2.2 - 2018-02-22         " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "         $script:VersionNumber         " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "(PID = $("{0:D8}" -f $pid))                   `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+    $Host.UI.RawUI.WindowTitle = "EXIF-tool $script:VersionNumber"
 
     [int]$preventstandbyid = 999999999
     [int]$preventstandbyid = Invoke-PreventSleep
@@ -485,7 +490,7 @@ Function Start-Everything(){
     Write-ColorOut "$(Get-CurrentDate)  --  Done!`r`n" -ForegroundColor Green
     Start-Sound -Success 1
     Start-Sleep -Seconds 1
-    Invoke-Pause
+    Invoke-Close
 }
 
 Start-Everything

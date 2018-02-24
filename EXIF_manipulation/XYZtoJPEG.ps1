@@ -6,8 +6,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    2.2
-        Date:       2018-02-22
+        Version:    2.3
+        Date:       2018-02-24
         Author:     flolilo
 
     .INPUTS
@@ -84,6 +84,8 @@ param(
             Exit
         }
     }
+# DEFINITION: version number:
+$VersionNumber = "v2.3 - 2018-02-24"
 
 
 # ==================================================================================================
@@ -211,6 +213,8 @@ Function Invoke-Close(){
     if($script:Debug -gt 0){
         Pause
     }
+
+    $Host.UI.RawUI.WindowTitle = "Windows PowerShell"
     Exit
 }
 
@@ -543,8 +547,9 @@ Function Start-Recycling(){
 Function Start-Everything(){
     Write-ColorOut "                                              A" -BackgroundColor DarkGray -ForegroundColor DarkGray
     Write-ColorOut "        flolilo's XYZ to JPEG converter        " -ForegroundColor DarkCyan -BackgroundColor Gray
-    Write-ColorOut "               v2.2 - 2018-02-22               " -ForegroundColor DarkCyan -BackgroundColor Gray
+    Write-ColorOut "               $script:VersionNumber               " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "(PID = $("{0:D8}" -f $pid))                               `r`n" -ForegroundColor Gray -BackgroundColor DarkGray
+    $Host.UI.RawUI.WindowTitle = "XYZ to JPEG converter $script:VersionNumber"
 
     [int]$preventstandbyid = 999999999
     [int]$preventstandbyid = Invoke-PreventSleep
@@ -576,7 +581,7 @@ Function Start-Everything(){
     Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
     Start-Sound -Success 1
     Start-Sleep -Seconds 5
-    Invoke-Pause
+    Invoke-Close
 }
 
 Start-Everything
