@@ -138,6 +138,6 @@ Remove some unnecessary context menu entries. **Could quite possibly damage your
 
 Ask user which unnecessary apps to uninstall. **Could quite possibly damage your system, so be careful!**
 
-### [_fortryingoutloud](./_fortryingoutloud.ps1)
+## [_fortryingoutloud](./_fortryingoutloud.ps1)
 
 Just a few (old) tests I like to keep around.
