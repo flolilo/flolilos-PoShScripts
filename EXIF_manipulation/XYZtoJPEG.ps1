@@ -60,15 +60,30 @@ param(
 )
 
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 # DEFINITION: Load Module "Recycle" for moving files to bin instead of removing completely.
-if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
-    Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    Exit
-}
+    try{
+        Import-Module -Name "Recycle" -NoClobber -Global -ErrorAction Stop
+    }catch{
+        try{
+            [string]$PoshRSJobPath = Get-ChildItem -LiteralPath $PSScriptRoot\Modules\Recycle -Recurse -Filter Recycle.psm1 -ErrorAction Stop | Select-Object -ExpandProperty FullName
+            Import-Module $PoshRSJobPath -NoClobber -Global -ErrorAction Stop
+        }catch{
+            Write-Host "Could not load Module `"Recycle`" - Please install it in an " -ForegroundColor Red -NoNewline
+            Write-Host "administrative console " -ForegroundColor Yellow -NoNewline
+            Write-Host "via " -ForegroundColor Red -NoNewline
+            Write-Host "Install-Module Recycle" -NoNewline
+            Write-Host ", download it from " -ForegroundColor Red -NoNewline
+            Write-Host "github.com/bdukes/PowerShellModules/tree/master/Recycle " -NoNewline
+            Write-Host "and install it to " -ForegroundColor Red -NoNewline
+            Write-Host "<SCRIPT_PATH>\Modules\Recycle\<VERSION.NUMBER>" -NoNewline -ForegroundColor Gray
+            Write-Host "." -ForegroundColor Red
+            Pause
+            Exit
+        }
+    }
 
 
 # ==================================================================================================
