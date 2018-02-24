@@ -6,15 +6,15 @@ Of course, some of them could potentially do nasty things, especially since they
 
 Below is a list of folders that tries to sort the scripts in some general categories and the name of the scripts at hand, including a small description:
 
-## [EXIF_tools](./EXIF_manipulation)
+## [EXIF_manipulation](./EXIF_manipulation)
 
 These tools use [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/).
 
-### exif_tool
+### [exif_tool](./EXIF_manipulation/exif_tool.ps1)
 
 Remove EXIF-entries in pictures (and re-add copyright information).
 
-### exif_transfer
+### [exif_transfer](./EXIF_manipulation/exif_transfer.ps1)
 
 Transfer EXIF information from one file to another.
 
@@ -22,127 +22,122 @@ Transfer EXIF information from one file to another.
 
 Use [ImageMagick](https://www.imagemagick.org/) to convert TIFs to JPEGs - and save all metadata.
 
-
-## ffmpeg_tools
+## [ffmpeg_tools](./ffmpeg_tools)
 
 These tools (mostly) use [FFmpeg](https://ffmpeg.org/).
 
-### compare_via_ffmpeg
+### [compare_via_ffmpeg](./ffmpeg_tools/compare_via_ffmpeg.ps1)
 
 Easy-to-use tool to create difference videos.
 
-### kamera_gui
+### [kamera_gui](./ffmpeg_tools/kamera_gui.ps1)
 
-Old version of `security-cam_gui` - will get delted after `security-cam_gui` is validated.
+Old version of [`security-cam_gui`](./ffmpeg_tools/security-cam_gui.ps1) - will get delted after [`security-cam_gui`](./ffmpeg_tools/security-cam_gui.ps1) is validated.
 
-### oldcodec_searchanddestroy
+### [oldcodec_searchanddestroy](./ffmpeg_tools/oldcodec_searchanddestroy.ps1)
 
 Search for old codecs with [FFprobe](https://ffmpeg.org/). If wanted, delete them.
 
-### oldcodec_transcode
+### [oldcodec_transcode](./ffmpeg_tools/oldcodec_transcode.ps1)
 
-Now almost completely implemented in `oldcodec_searchanddestroy`. Transcode files in batch with.
+Now almost completely implemented in [`oldcodec_searchanddestroy`](./ffmpeg_tools/oldcodec_searchanddestroy.ps1). Transcode files in batch with.
 
-### screencapture
+### [screencapture](./ffmpeg_tools/screencapture.ps1)
 
 Capture your desktop, then render the video web-compliantly .
 
-### security-cam_gui
+### [security-cam_gui](./ffmpeg_tools/security-cam_gui.ps1)
 
 Re-encode file from the SD-card of the main station of security cams.
 
-### split-quadscreen
+### [split-quadscreen](./ffmpeg_tools/split-quadscreen.ps1)
 
 Split a (quadscreen-)video into parts.
 
-### transcodetomp3
+### [transcodetomp3](./ffmpeg_tools/transcodetomp3.ps1)
 
-Transcode non-MP§-files to MP3.
+Transcode non-MP3-files to MP3.
 
-
-## file_tools
+## [file_tools](./file_tools)
 
 Tools that re-sort, delete, clean up, ... folders.
 
-### find_extensions
+### [find_extensions](./file_tools/find_extensions.ps1)
 
 Look for files with other extensions than the specified (helps at cleaning up).
 
-### foobar_datamover
+### [foobar_datamover](./file_tools/foobar_datamover.ps1)
 
 Move MP3s after converting them with foobar, so they make sense again.
 
-### pictures_cleanup
+### [pictures_cleanup](./file_tools/pictures_cleanup.ps1)
 
 Clean up (sub)folders with unneeded files (e.g. SideCar-files).
 
-### robocopy-gui
+### [robocopy-gui](./file_tools/robocopy-gui.ps1)
 
 **Not complete!** Attempt to create a GUI for robocopy.
 
-### treecmd
+### [treecmd](./file_tools/treecmd.ps1)
 
 Powershell-implementation of [`tree`](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb491019(v=technet.10)).
 
-
-## LAN_tools
+## [LAN_tools](./LAN_tools)
 
 Tools that work around my network.
 
-### automount_smb
+### [automount_smb](./LAN_tools/automount_smb.ps1)
 
 Automount SMB-shares (to circumvent the inability to browse after disabling SMBv1).
 
-### catalog_backup
+### [catalog_backup](./LAN_tools/catalog_backup.ps1)
 
 For backing up picture catalogs using [7-zip](http://www.7-zip.org/).
 
-### mysqldump_bash.sh
+### [mysqldump_bash.sh](./LAN_tools/mysqldump_bash.sh)
 
 _**Not** a PowerShell-script, but a Bash-script._ Make backups of a complete MySQL database via `mysqldump`, then `gzip` it. Delete old files if `>128MB` are used.
 
-### mysqldump_powershell
+### [mysqldump_powershell](./LAN_tools/mysqldump_powershell.ps1)
 
-**Not yet working!** A PowerShell-implementation of `mysqldump_bash.sh`.
+**Not yet working!** A PowerShell-implementation of [`mysqldump_bash.sh`](./LAN_tools/mysqldump_bash.sh).
 
-### wakeonlan
+### [wakeonlan](./LAN_tools/wakeonlan.ps1)
 
 Wakes server(s) up if they are not yet running, using [wolcmd](https://www.depicus.com/wake-on-lan/wake-on-lan-cmd).
 
-
-## system_tools
+## [system_tools](./system_tools)
 
 Tools that interact with Windows.
 
-### cpuwatch
+### [cpuwatch](./system_tools/cpuwatch.ps1)
 
 Document the computer's CPU- and RAM-stats (into a CSV-file).
 
-### ipconfig_replacement
+### [ipconfig_replacement](./system_tools/ipconfig_replacement.ps1)
 
 **Not complete!** A playground for replacing `ipconfig`. Or not.
 
-### powershell_doubleclick-behavior
+### [powershell_doubleclick-behavior](./system_tools/powershell_doubleclick-behavior.ps1)
 
 Change behavior of a double-click on `.ps1`-files in Windows Explorer.
 
-### preventsleep
+### [preventsleep](./system_tools/preventsleep.ps1)
 
 Prevent the computer from going to standby - options for forever, certain CPU threshold, or running processes.
 
-### profile
+### [profile](./system_tools/profile.ps1)
 
 My profile-file.
 
-### remove_registry_entries
+### [remove_registry_entries](./system_tools/remove_registry_entries.ps1)
 
 Remove some unnecessary context menu entries. **Could quite possibly damage your system, so be careful!**
 
-### remove_win10_apps
+### [remove_win10_apps](./system_tools/remove_win10_apps.ps1)
 
 Ask user which unnecessary apps to uninstall. **Could quite possibly damage your system, so be careful!**
 
-
-### _fortryingoutloud
+### [_fortryingoutloud](./_fortryingoutloud.ps1)
 
 Just a few (old) tests I like to keep around.
