@@ -1,0 +1,33 @@
+[
+    {
+        "presetname": "jack",
+        "settings": {
+            "username": "users\\jack",
+            "shares": [
+                "\\\\10.0.0.2\\room237",
+                "\\\\127.0.0.1\\delbert_grady",
+                "\\\\10.0.0.2\\stephen_king_novels"
+            ]
+        }
+    },
+    {
+        "presetname": "wendy",
+        "settings": {
+            "username": "users\\wendy",
+            "shares": [
+                "\\\\10.0.0.2\\elevator",
+                "\\\\10.0.0.2\\jacksmacksdanny"
+            ]
+        }
+    },
+    {
+        "presetname": "danny",
+        "settings": {
+            "username": "users\\danny",
+            "shares": [
+                "\\\\10.0.0.2\\mazerunning",
+                "\\\\127.0.0.1\\tony"
+            ]
+        }
+    }
+]
