@@ -6,8 +6,8 @@
     .DESCRIPTION
         This tool uses ImageMagick and ExifTool.
     .NOTES
-        Version:    2.3
-        Date:       2018-02-24
+        Version:    2.4
+        Date:       2018-03-06
         Author:     flolilo
 
     .INPUTS
@@ -85,7 +85,7 @@ param(
         }
     }
 # DEFINITION: version number:
-$VersionNumber = "v2.3 - 2018-02-24"
+    $VersionNumber = "v2.4 - 2018-03-06"
 
 
 # ==================================================================================================
@@ -576,12 +576,10 @@ Function Start-Everything(){
         Invoke-Pause
     }
 
-    Stop-Process -Id $preventstandbyid -Verbose
-
     Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
     Start-Sound -Success 1
     Start-Sleep -Seconds 5
-    Invoke-Close
+    Invoke-Close -PSPID $preventstandbyid
 }
 
 Start-Everything

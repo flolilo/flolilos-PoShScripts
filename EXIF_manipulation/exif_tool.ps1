@@ -6,9 +6,9 @@
     .DESCRIPTION
         Uses exiftool by Phil Harvey (https://sno.phy.queensu.ca/~phil/exiftool/)
     .NOTES
-        Version:        2.3
+        Version:        2.4
         Author:         flolilo
-        Creation Date:  2018-02-24
+        Creation Date:  2018-03-06
 
     .INPUTS
         (optional) exif_tool_vars.json, formatted in UTF8 for copyright-values (if not provided via parameters),
@@ -57,7 +57,7 @@ param(
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
     $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 # DEFINITION: version number:
-    $VersionNumber = "v2.3 - 2018-02-24"
+    $VersionNumber = "v2.4 - 2018-03-06"
 
 
 # ==================================================================================================
@@ -485,12 +485,10 @@ Function Start-Everything(){
 
     Start-EXIFtool -WorkingFiles $WorkingFiles -ArgumentList $ArgumentList -EXIFtool $script:EXIFtool
 
-    Stop-Process -Id $preventstandbyid -Verbose
-
     Write-ColorOut "$(Get-CurrentDate)  --  Done!`r`n" -ForegroundColor Green
     Start-Sound -Success 1
     Start-Sleep -Seconds 1
-    Invoke-Close
+    Invoke-Close -PSPID $preventstandbyid
 }
 
 Start-Everything
