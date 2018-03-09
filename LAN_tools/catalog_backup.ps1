@@ -6,9 +6,9 @@
     .DESCRIPTION
         Using 7z to fastly archive the catalog(s) to the backup-location, using robocopy to download the archive from the backup-location.
     .NOTES
-        Version:        1.2
+        Version:        1.3
         Author:         flolilo
-        Creation Date:  2018-02-22
+        Creation Date:  2018-03--09
 
     .INPUTS
         (optional) catalog_backup_vars.json (encoded in UTF8).
@@ -52,9 +52,9 @@ param(
     [string]$C1_path =          "",
     [string]$server_path =      "",
     [string]$7zipexe =          "C:\Program Files\7-Zip\7z.exe",
-    [string]$7z_up_prefix =     "a -t7z -m0=Copy -mx0 -ms=off -ssw -sccUTF-8 -bb0",
+    [string]$7z_up_prefix =     "a -t7z -m0=Copy -mx0 -ms=off -ssw -sccUTF-8 -bb0 -slp ",
     [string]$7z_up_suffix =     " -x!Backup",
-    [string]$7z_down_prefix =   "x -aoa -bb0 -pdefault -sccUTF-8 -spf2",
+    [string]$7z_down_prefix =   "x -aoa -bb0 -pdefault -sccUTF-8 -spf2 -slp ",
     [string]$7z_down_suffix =   "",
     [int]$backup_existing =     -1,
     [int]$Delete =              -1,
@@ -62,9 +62,9 @@ param(
 )
 
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 
 
 # ==================================================================================================
