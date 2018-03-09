@@ -337,8 +337,8 @@ Function Start-Upload(){
         Start-Sleep -Milliseconds 250
         Write-ColorOut "7zipping new $catalogname-backup to $script:server_path ..." -ForegroundColor Cyan -Indentation 4
         [string]$archive_name = "_Picture_Catalog_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
-        Pause
-        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$script:server_path\$archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
+        Start-Sleep -Seconds 2
+        Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$script:server_path\$archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
     }
 
     return $true
@@ -363,7 +363,7 @@ Function Start-Download(){
         if($script:backup_existing -eq 1){
             Write-ColorOut "Backing up existing files in $Catalog_Path ..." -ForegroundColor Cyan -Indentation 4
             [string]$backup_archive_name = "_BACKUP_-_PicCat_$($catalogname)_$(Get-Date -Format "yyyy-MM-dd").7z"
-            Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"-w$Catalog_Path\`" `"$Catalog_Path\$backup_archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
+            Start-Process -FilePath $script:7zipexe -ArgumentList "$script:7z_up_prefix `"$Catalog_Path\$backup_archive_name`" `"$Catalog_Path`" $script:7z_up_suffix" -NoNewWindow -Wait
         }
 
         Write-ColorOut "Scanning for $catalogname-backups in $script:server_path ..." -ForegroundColor Cyan -Indentation 4
@@ -396,7 +396,7 @@ Function Start-Download(){
 
         Write-ColorOut "Deleting existing files in $Catalog_Path ..." -ForegroundColor Cyan -Indentation 4
         # Deleting old catalog-files on computer:
-        Get-ChildItem -Path $Catalog_Path -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm -Recurse
+        Get-ChildItem -Path $Catalog_Path -Recurse -File -Exclude *.7z | Remove-Item -Confirm:$confirm
         Get-ChildItem -Path $Catalog_Path -Recurse -Directory | Remove-Item -Confirm:$confirm -Recurse
 
         Write-ColorOut "Starting Copying..." -ForegroundColor Cyan -Indentation 4
