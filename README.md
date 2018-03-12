@@ -10,14 +10,12 @@ Below is a list of folders that tries to sort the scripts in some general catego
 ## [EXIF manipulation](./EXIF_manipulation)
 These tools use [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/).
 
-### [exif_tool](./EXIF_manipulation/exif_tool.ps1)
-Remove EXIF-entries in pictures (and re-add copyright information).
-
 ### [exif_transfer](./EXIF_manipulation/exif_transfer.ps1)
 Transfer EXIF information from one file to another.
 
-### [XYZtoJPEG](./EXIF_manipulation/XYZtoJPEG.ps1)
-Use [ImageMagick](https://www.imagemagick.org/) to convert TIFs to JPEGs - and save all metadata.
+### [picture_tool](./EXIF_manipulation/XYZtoJPEG.ps1)
+This tool can a) convert files to JPEG via [ImageMagick](https://www.imagemagick.org/) and/or b) transfer/modify the pictures' metadata.
+Combines `XYTtoJPEG.ps1` and `exif_tool.ps1` in one solution.
 
 
 ## [ffmpeg tools](./ffmpeg_tools)
@@ -40,6 +38,7 @@ Capture your desktop, then render the video web-compliantly .
 
 ### [security-cam_gui](./ffmpeg_tools/security-cam_gui.ps1)
 Re-encode file from the SD-card of the main station of security cams.
+
 ### [split-quadscreen](./ffmpeg_tools/split-quadscreen.ps1)
 Split a (quadscreen-)video into parts.
 

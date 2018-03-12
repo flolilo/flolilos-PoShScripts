@@ -19,8 +19,6 @@
         Path where images should be searched and edited (default: current path of console).
     .PARAMETER Filter
         Filter for files. E.g. "*IMG_*" for all files with IMG_ in their name.
-    .PARAMETER ShowValues
-        Show copyright-values before adding them.
     .PARAMETER EXIFtool
         Path to Exiftool.exe.
     .PARAMETER Debug
@@ -30,12 +28,19 @@
         exif_transfer -Filter "*image_525*" -EXIFtool "C:\exiftool.exe"
 #>
 param(
+    [ValidateNotNullOrEmpty()]
     [array]$InputPath =     @("$((Get-Location).Path)"),
-    [string]$Filter =       "*",
-    [int]$ShowValues =      0,
+    [string]$Formats =      "*",
     [string]$EXIFtool =     "$($PSScriptRoot)\exiftool.exe",
     [int]$Debug =           0
 )
+# DEFINITION: Combine all parameters into a hashtable, then delete the parameter variables:
+    [hashtable]$UserParams = @{
+        InputPath = $InputPath
+        Formats = $Formats
+        EXIFtool = $EXIFtool
+    }
+    Remove-Variable -Name InputPath,Formats,EXIFtool
 
 # DEFINITION: Get all error-outputs in English:
     [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -51,33 +56,30 @@ param(
 # ==============================================================================
 # ==================================================================================================
 
-# DEFINITION: Making Write-Host much, much faster:
+# DEFINITION: Making Write-ColorOut much, much faster:
 Function Write-ColorOut(){
     <#
         .SYNOPSIS
-            A faster version of Write-Host
+            A faster version of Write-ColorOut
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-30
+            Date: 2018-03-12
         
         .PARAMETER Object
-            String to write out. Mandatory, but will take every non-parametised value.
+            String to write out
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
-        .PARAMETER Indentation
-            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
 
         .EXAMPLE
-            Just use it like Write-Host.
+            Just use it like Write-ColorOut.
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Object,
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
 
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
@@ -125,7 +127,7 @@ Function Start-Sound(){
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
         .NOTES
-            Date: 2018-10-25
+            Date: 2018-03-12
 
         .PARAMETER Success
             1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
@@ -136,8 +138,7 @@ Function Start-Sound(){
             For fail: Start-Sound 0
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [int]$Success
+        [int]$Success = $(return $false)
     )
     try{
         $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
@@ -162,8 +163,8 @@ Function Invoke-Pause(){
 # DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
 Function Invoke-Close(){
     param(
-        [Parameter(Mandatory=$true)]
-        [int]$PSPID
+        [ValidateRange(1,999999999)]
+        [int]$PSPID = 999999999
     )
     Write-ColorOut "Exiting - This could take some seconds. Please do not close this window!" -ForegroundColor Magenta
     if($PSPID -ne 999999999){
@@ -225,12 +226,16 @@ Function Get-CurrentDate(){
 
 # DEFINITION: Get user-values:
 Function Test-UserValues(){
-    Write-ColorOut "$(Get-CurrentDate)  --  Testing exiftool..." -ForegroundColor Cyan
+    param(
+        [ValidateNotNullOrEmpty()]
+        [hashtable]$UserParams = $(throw 'UserParams is required by Test-UserValues')
+    )
+    Write-ColorOut "$(Get-CurrentDate)  --  Testing EXE-path..." -ForegroundColor Cyan
 
     # DEFINITION: Search for exiftool:
-    if((Test-Path -LiteralPath $script:EXIFtool -PathType Leaf) -eq $false){
+    if((Test-Path -LiteralPath $UserParams.EXIFtool -PathType Leaf) -eq $false){
         if((Test-Path -LiteralPath "$($PSScriptRoot)\exiftool.exe" -PathType Leaf) -eq $true){
-            [string]$script:EXIFtool = "$($PSScriptRoot)\exiftool.exe"
+            [string]$UserParams.EXIFtool = "$($PSScriptRoot)\exiftool.exe"
         }else{
             Write-ColorOut "Exiftool not found - aborting!" -ForegroundColor Red -Indentation 2
             Start-Sound -Success 0
@@ -238,29 +243,27 @@ Function Test-UserValues(){
             return $false
         }
     }
-    if((Test-Path -LiteralPath $script:InputPath -PathType Container) -eq $false){
-        Write-ColorOut "$script:InputPath not found - aborting!" -ForegroundColor Red -Indentation 2
+    if((Test-Path -LiteralPath $UserParams.InputPath -PathType Container) -eq $false){
+        Write-ColorOut "$($UserParams.InputPath) not found - aborting!" -ForegroundColor Red -Indentation 2
         Start-Sound -Success 0
         Start-Sleep -Seconds 5
         return $false
     }
 
-    return $true
+    return $UserParams
 }
 
 # DEFINITION: Get user-values:
 Function Get-InputFiles(){
     param(
-        [Parameter(Mandatory=$true)]
-        [array]$InputPath,
-        [Parameter(Mandatory=$true)]
-        [string]$Filter
+        [ValidateNotNullOrEmpty()]
+        [hashtable]$UserParams = $(throw 'UserParams is required by Get-InputFiles')
     )
     Write-ColorOut "$(Get-CurrentDate)  --  Getting files..." -ForegroundColor Cyan
 
     [array]$original = @()
     [array]$jpg = @()
-    [array]$WorkingFiles = @(Get-ChildItem -Path $script:InputPath -Filter $Filter -File | ForEach-Object {
+    [array]$WorkingFiles = @(Get-ChildItem -LiteralPath $UserParams.InputPath -Filter $UserParams.Filter -File | ForEach-Object {
         [PSCustomObject]@{
             BaseName = $_.BaseName
             FullName = $_.FullName
@@ -295,8 +298,8 @@ Function Get-InputFiles(){
     }
 
     for($i=0; $i -lt $original.Length; $i++){
-        Write-ColorOut "From:`t$($original[$i].Replace("$script:InputPath","."))" -ForegroundColor Gray -Indentation 4
-        Write-ColorOut "To:`t`t  $($jpg[$i].Replace("$script:InputPath","."))" -Indentation 4
+        Write-ColorOut "From:`t$($original[$i].Replace("$($UserParams.InputPath)","."))" -ForegroundColor Gray -Indentation 4
+        Write-ColorOut "To:`t`t  $($jpg[$i].Replace("$($UserParams.InputPath)","."))" -Indentation 4
     }
 
     [array]$WorkingFiles = @()
@@ -312,20 +315,14 @@ Function Get-InputFiles(){
 
 Function Start-Transfer(){
     param(
-        [Parameter(Mandatory=$true)]
-        [array]$WorkingFiles,
-        [Parameter(Mandatory=$true)]
-        [string]$EXIFtool
+        [ValidateNotNullOrEmpty()]
+        [hashtable]$UserParams = $(throw 'UserParams is required by Start-Transfer'),
+        [ValidateNotNullOrEmpty()]
+        [array]$WorkingFiles = $(throw 'WorkingFiles is required by Start-Transfer')
     )
-    Write-ColorOut "$(Get-CurrentDate)  --  Transfering metadata..." -ForegroundColor Cyan
-    $sw = [diagnostics.stopwatch]::StartNew()
-    if($script:Debug -gt 0){
-        [string]$debuginter = "$((Get-Location).Path)"
-    }
-
     # DEFINITION: Create Exiftool process:
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $script:EXIFtool
+    $psi.FileName = $UserParams.EXIFtool
     $psi.Arguments = "-stay_open True -@ -"
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = $true
@@ -333,6 +330,13 @@ Function Start-Transfer(){
     $psi.RedirectStandardError = $true
     $exiftoolproc = [System.Diagnostics.Process]::Start($psi)
     Start-Sleep -Seconds 1
+
+    Write-ColorOut "$(Get-CurrentDate)  --  Transfering metadata..." -ForegroundColor Cyan
+    $sw = [diagnostics.stopwatch]::StartNew()
+    if($script:Debug -gt 0){
+        [string]$debuginter = "$((Get-Location).Path)"
+    }
+    [int]$errorcounter = 0
 
     # DEFINITION: Pass arguments to Exiftool:
     for($i=0; $i -lt $WorkingFiles.length; $i++){
@@ -342,7 +346,7 @@ Function Start-Transfer(){
             $sw.Start()
         }
 
-        [string]$ArgList = "-tagsfromfile`n$($WorkingFiles[$i].SourceFullName)`n-All:All`n-xresolution=300`n-yresolution=300`n-overwrite_original`n-progress`n$($WorkingFiles[$i].JPEGFullName)"
+        [string]$ArgList = "-tagsfromfile`n$($WorkingFiles[$i].SourceFullName)`n-All:All`n-xresolution=300`n-yresolution=300`n-overwrite_original`n$($WorkingFiles[$i].JPEGFullName)"
         if($script:Debug -gt 0){
             Write-ColorOut $ArgList.Replace("`n"," ").Replace("$debuginter",".") -ForegroundColor DarkGray -Indentation 4
         }
@@ -362,15 +366,21 @@ Function Start-Transfer(){
         Write-ColorOut "$($WorkingFiles[$i].JPEGFullName.Replace("$script:InputPath",".")):`t" -ForegroundColor Gray -NoNewLine -Indentation 2
         if($outputerror[$i].Length -gt 0){
             Write-ColorOut "$($outputerror[$i])`t" -ForegroundColor Red -NoNewline
+            $errorcounter++
         }
         Write-ColorOut "$($outputout[$i])" -ForegroundColor Yellow
     }
-
     Write-Progress -Activity "Transfering metadata..." -Status "Done!" -Completed
+
+    return $errorcounter
 }
 
 # DEFINITION: Start everything:
 Function Start-Everything(){
+    param(
+        [ValidateNotNullOrEmpty()]
+        [hashtable]$UserParams = $(throw 'UserParams is required by Start-Everything')
+    )
     Write-ColorOut "                                              A" -BackgroundColor DarkGray -ForegroundColor DarkGray
     Write-ColorOut "         flolilo's EXIF transfer tool          " -ForegroundColor DarkCyan -BackgroundColor Gray
     Write-ColorOut "               $script:VersionNumber               " -ForegroundColor DarkCyan -BackgroundColor Gray
@@ -379,22 +389,39 @@ Function Start-Everything(){
 
     [int]$preventstandbyid = 999999999
     [int]$preventstandbyid = Invoke-PreventSleep
-    if((Test-UserValues) -eq $false){
+
+    $UserParams = Test-UserValues -UserParams $UserParams
+    if($script:Debug -gt 1){
+        $UserParams | Format-List
+    }
+    if($UserParams -eq $false -or $UserParams.GetType().Name -ne "hashtable"){
         Invoke-Close -PSPID $preventstandbyid
     }
     Invoke-Pause
 
-    [array]$WorkingFiles = @(Get-InputFiles -InputPath $script:InputPath -Filter $script:Filter)
-    if($WorkingFiles.Length -lt 1){
-        Write-ColorOut "No files found!" -ForegroundColor Magenta
-        Start-Sound -Success 1
-        Start-Sleep -Seconds 5
+    [array]$WorkingFiles = @(Get-InputFiles -UserParams $UserParams)
+    if($WorkingFiles -eq $false){
+        Start-Sound -Success 0
         Invoke-Close -PSPID $preventstandbyid
+    }elseif($WorkingFiles.Length -le 0){
+        Write-ColorOut "Zero files to process!" -ForegroundColor Yellow -Indentation 2
+        Start-Sound -Success 1
+        Start-Sleep 2
+        Invoke-Close -PSPID $preventstandbyid
+    }
+    if($script:Debug -gt 1){
+        $WorkingFiles | Format-Table -AutoSize
     }
     Write-ColorOut "Continue?`t" -ForegroundColor Yellow -NoNewLine -Indentation 2
     Pause
 
-    Start-Transfer -WorkingFiles $WorkingFiles -EXIFtool $script:EXIFtool
+    if((Start-Transfer -UserParams $UserParams -WorkingFiles $WorkingFiles) -gt 0){
+        Write-ColorOut "Errors occured in transfer" -ForegroundColor Red -Indentation 2
+        Start-Sound -Success 0
+        Start-Sleep -Seconds 2
+        Invoke-Close -PSPID $preventstandbyid
+    }
+    Invoke-Pause
 
     Write-ColorOut "$(Get-CurrentDate)  --  Done!" -ForegroundColor Green
     Start-Sound -Success 1
@@ -402,4 +429,4 @@ Function Start-Everything(){
     Invoke-Close -PSPID $preventstandbyid
 }
 
-Start-Everything
+Start-Everything -UserParams $UserParams
