@@ -12,7 +12,7 @@
 
     .INPUTS
         files,
-        optional: exif_tool_vars.json, if -EXIFManipulation is enabled.
+        optional: picture_tool_vars.json, if -EXIFManipulation is enabled.
     .OUTPUTS
         JPEGs of the input-files with -Convert2JPEG,
         otherwise the same files.
@@ -521,9 +521,9 @@ Function Get-EXIFValues(){
     Write-ColorOut "$(Get-CurrentDate)  --  Getting EXIF-values..." -ForegroundColor Cyan
 
     if($UserParams.EXIFArtistName.Length -lt 1 -or $UserParams.EXIFCopyrightText.Length -lt 1){
-        if((Test-Path -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -PathType Leaf) -eq $true){
+        if((Test-Path -LiteralPath "$($PSScriptRoot)\picture_tool_vars.json" -PathType Leaf) -eq $true){
             try{
-                [array]$JSON = Get-Content -LiteralPath "$($PSScriptRoot)\exif_tool_vars.json" -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-JSON -ErrorAction Stop
+                [array]$JSON = Get-Content -LiteralPath "$($PSScriptRoot)\picture_tool_vars.json" -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-JSON -ErrorAction Stop
                 if($UserParams.EXIFPresetName.Length -gt 0 -and $UserParams.EXIFPresetName -in $JSON.preset){
                     [array]$JSON = $JSON | Where-Object {$_.preset -eq $UserParams.EXIFPresetName}
                 }else{
@@ -535,7 +535,7 @@ Function Get-EXIFValues(){
                 [string]$UserParams.EXIFArtistName = $JSON.artist_name
                 [string]$UserParams.EXIFCopyrightText = $JSON.copyright_text
             }catch{
-                Write-ColorOut "Could not load $($PSScriptRoot)\exif_tool_vars.json" -ForegroundColor Magenta -Indentation 2
+                Write-ColorOut "Could not load $($PSScriptRoot)\picture_tool_vars.json" -ForegroundColor Magenta -Indentation 2
                 try{
                     Write-ColorOut "Enter artist name here:`t" -NoNewLine -Indentation 4
                     [string]$UserParams.EXIFArtistName = Read-Host

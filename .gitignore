@@ -4,8 +4,8 @@
 *.pdf
 *.csv
 *.xlsx
-*.json
 /movies/*
+.vscode/*
 
 # DEFINITION: ignore file that's in the repo
 # CREDIT: https://www.git-scm.com/docs/git-update-index
