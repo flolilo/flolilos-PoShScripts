@@ -8,14 +8,7 @@ Below is a list of folders that tries to sort the scripts in some general catego
 
 
 ## [EXIF manipulation](./EXIF_manipulation)
-These tools use [exiftool](https://sno.phy.queensu.ca/~phil/exiftool/).
-
-### [exif_transfer](./EXIF_manipulation/exif_transfer.ps1)
-Transfer EXIF information from one file to another.
-
-### [picture_tool](./EXIF_manipulation/XYZtoJPEG.ps1)
-This tool can a) convert files to JPEG via [ImageMagick](https://www.imagemagick.org/) and/or b) transfer/modify the pictures' metadata.
-Combines `XYTtoJPEG.ps1` and `exif_tool.ps1` in one solution.
+These tools moved to [their own repository](https://github.com/flolilo/picture_tool).
 
 
 ## [ffmpeg tools](./ffmpeg_tools)
