@@ -7,7 +7,6 @@
 /movies/*
 .vscode/*
 */*TESTFILES/*
-!picture_tool_TESTFILES.7z
 
 # DEFINITION: ignore file that's in the repo
 # CREDIT: https://www.git-scm.com/docs/git-update-index
