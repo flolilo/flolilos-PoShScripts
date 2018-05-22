@@ -8,8 +8,8 @@
         All app-names are taken from this website; also, the syntax is derived from theirs.
         Please be careful with using this tool!
     .NOTES
-        Version:        1.1
-        Creation Date:  2017-11-29
+        Version:        1.2
+        Creation Date:  2018-05-22
         Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
         applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
         on the WWW). However, some parts are copies or modifications of very genuine code - see
@@ -230,6 +230,10 @@ Function Set-Apps(){
     $AppName += "*Asphalt8Airborne*"
     $Useless += 1
 
+    $ClearName += "Bubble Witch 3 Saga"
+    $AppName += "*BubbleWitch3Saga*"
+    $Useless += 1
+
     $ClearName += "Calculator"
     $AppName += "*WindowsCalculator*"
     $Useless += 0
@@ -244,6 +248,14 @@ Function Set-Apps(){
 
     $ClearName += "Candy Crush Soda Saga"
     $AppName += "*CandyCrushSodaSaga*"
+    $Useless += 1
+
+    $ClearName += "Disney Magic Kingdoms"
+    $AppName += "*DisneyMagicKingdoms*"
+    $Useless += 1
+
+    $ClearName += "Dolby Laboratories - DolbyAccess"
+    $AppName += "*DolbyAccess*"
     $Useless += 1
 
     $ClearName += "Drawboard PDF"
@@ -285,6 +297,11 @@ Function Set-Apps(){
     $ClearName += "Groove Music"
     $AppName += "*ZuneMusic*"
     $Useless += 0
+
+    $ClearName += "March of Empires"
+    $AppName += "*MarchofEmpires*"
+    $Useless += 1
+
 
     $ClearName += "Maps"
     $AppName += "*WindowsMaps*"
@@ -370,6 +387,10 @@ Function Set-Apps(){
     $AppName += "*Photos*"
     $Useless += 0
 
+    $ClearName += "Print3D"
+    $AppName += "*Print3D*"
+    $Useless += 1
+
     $ClearName += "Royal Revolt 2"
     $AppName += "*flaregamesGmbH.RoyalRevolt2*"
     $Useless += 1
@@ -439,6 +460,10 @@ Function Set-Apps(){
     $AppName += "*XboxOneSmartGlass*"
     $Useless += 0
 
+
+    $ClearName += "XING"
+    $AppName += "*XING*"
+    $Useless += 1
 
     [array]$Apps = (0..$ClearName.Length) | ForEach-Object {
         [PSCustomObject]@{
