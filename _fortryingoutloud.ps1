@@ -1,7 +1,8 @@
-#DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -typename System.Text.UTF8Encoding
-# Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Get all error-outputs in English:
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    [Console]::InputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -11,7 +12,7 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2018-05-22
         
         .PARAMETER Object
             String to write out
@@ -21,16 +22,16 @@ Function Write-ColorOut(){
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Object,
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -42,7 +43,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor

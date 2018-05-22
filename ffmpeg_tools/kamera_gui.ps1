@@ -1,4 +1,5 @@
-﻿# Flos Ueberwachungskamera-Tool, v2.7, 2017-03-07
+﻿#requires -version 3
+# Flos Ueberwachungskamera-Tool, v2.7, 2017-03-07
 # Tested with PowerShell 5.1 (Win10)
 # BEWARE: This script is an OLD version of security-cam_gui.ps1
 # 
@@ -36,26 +37,33 @@ param(
     [int]$debug = 0 # 1 pauses after exit, 2 after every function
 ENDE DES PARAMETER-BACKUPS #>
 
+# DEFINITION: Get all error-outputs in English:
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    [Console]::InputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
+
 if($paraShowParas -ne 0){
-    Write-Host "Flos Ueberwachungskamera-Tool Parameter:" -ForegroundColor Green
-    Write-Host " "
-    Write-Host "-paraEncoder = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraEncoder -ForegroundColor Yellow
-    Write-Host "-paraInput = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraInput -ForegroundColor Yellow
-    Write-Host "-paraOutput = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraOutput -ForegroundColor Yellow
-    Write-Host "-paraMeth = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraMeth -ForegroundColor Yellow
-    Write-Host "-paraMultiThread = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraMultiThread -ForegroundColor Yellow
-    Write-Host "-paraHardware = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraHardware -ForegroundColor Yellow
-    Write-Host "-paraShutdown = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraShutdown -ForegroundColor Yellow
-    Write-Host "-paraGUI = " -NoNewline -ForegroundColor Cyan
-    Write-Host $paraGUI -ForegroundColor Yellow
-    Write-Host " "
+    Write-ColorOut "Flos Ueberwachungskamera-Tool Parameter:" -ForegroundColor Green
+    Write-ColorOut " "
+    Write-ColorOut "-paraEncoder = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraEncoder -ForegroundColor Yellow
+    Write-ColorOut "-paraInput = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraInput -ForegroundColor Yellow
+    Write-ColorOut "-paraOutput = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraOutput -ForegroundColor Yellow
+    Write-ColorOut "-paraMeth = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraMeth -ForegroundColor Yellow
+    Write-ColorOut "-paraMultiThread = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraMultiThread -ForegroundColor Yellow
+    Write-ColorOut "-paraHardware = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraHardware -ForegroundColor Yellow
+    Write-ColorOut "-paraShutdown = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraShutdown -ForegroundColor Yellow
+    Write-ColorOut "-paraGUI = " -NoNewline -ForegroundColor Cyan
+    Write-ColorOut $paraGUI -ForegroundColor Yellow
+    Write-ColorOut " "
     Pause
     Exit
 }
@@ -107,8 +115,8 @@ if($script:paraGUI -ne 0){
     $reader=(New-Object System.Xml.XmlNodeReader $xaml)
     try{$Form=[Windows.Markup.XamlReader]::Load($reader)}
     catch{
-        Write-Host "Kann Windows.Markup.XamlReader nicht laden. Normalerweise ist .NET Framework nicht installiert. Bitte den neuesten .NET Framework Web-Installer fuer das jeweilige Betriebssystem Downloaden und installieren: https://www.google.at/webhp?q=net+framework+web+installer" -ForegroundColor Red
-        Write-Host "Alternativ dieses Skript mit '-paraGUI 0' (ohne Anfuerhungszeichen) starten um es in der Kommandozeilen-Version zu starten (andere Parameter via '-showParas 1' oder via README-Datei herausfinden." -ForegroundColor Yellow
+        Write-ColorOut "Kann Windows.Markup.XamlReader nicht laden. Normalerweise ist .NET Framework nicht installiert. Bitte den neuesten .NET Framework Web-Installer fuer das jeweilige Betriebssystem Downloaden und installieren: https://www.google.at/webhp?q=net+framework+web+installer" -ForegroundColor Red
+        Write-ColorOut "Alternativ dieses Skript mit '-paraGUI 0' (ohne Anfuerhungszeichen) starten um es in der Kommandozeilen-Version zu starten (andere Parameter via '-showParas 1' oder via README-Datei herausfinden." -ForegroundColor Yellow
         Pause
         Exit
     }
@@ -118,10 +126,10 @@ if($script:paraGUI -ne 0){
     [int]$programmierung = 0
     if($programmierung -ne 0){
         if ($global:ReadmeDisplay -ne $true){
-            Write-host "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow
+            Write-ColorOut "If you need to reference this display again, run Get-FormVariables" -ForegroundColor Yellow
             $global:ReadmeDisplay=$true
         }
-        write-host "Found the following interactable elements:" -ForegroundColor Cyan
+        Write-ColorOut "Found the following interactable elements:" -ForegroundColor Cyan
         get-variable WPF*
     }
 
@@ -139,10 +147,128 @@ if($script:paraGUI -ne 0){
     Clear-Variable -Name inputXML*
 }
 
-#===============================================================================
-#===============================================================================
-# Setting up Functions:
-#===============================================================================
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
+
+# DEFINITION: Making Write-ColorOut much, much faster:
+Function Write-ColorOut(){
+    <#
+        .SYNOPSIS
+            A faster version of Write-Host
+        .DESCRIPTION
+            Using the [Console]-commands to make everything faster.
+        .NOTES
+            Date: 2018-05-22
+        
+        .PARAMETER Object
+            String to write out
+        .PARAMETER ForegroundColor
+            Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
+        .PARAMETER BackgroundColor
+            Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
+        .PARAMETER NoNewLine
+            When enabled, no line-break will be created.
+
+        .EXAMPLE
+            Just use it like Write-Host.
+    #>
+    param(
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
+
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
+        [string]$ForegroundColor,
+
+        [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
+        [string]$BackgroundColor,
+
+        [switch]$NoNewLine=$false,
+
+        [ValidateRange(0,48)]
+        [int]$Indentation=0
+    )
+
+    if($ForegroundColor.Length -ge 3){
+        $old_fg_color = [Console]::ForegroundColor
+        [Console]::ForegroundColor = $ForegroundColor
+    }
+    if($BackgroundColor.Length -ge 3){
+        $old_bg_color = [Console]::BackgroundColor
+        [Console]::BackgroundColor = $BackgroundColor
+    }
+    if($Indentation -gt 0){
+        [Console]::CursorLeft = $Indentation
+    }
+
+    if($NoNewLine -eq $false){
+        [Console]::WriteLine($Object)
+    }else{
+        [Console]::Write($Object)
+    }
+    
+    if($ForegroundColor.Length -ge 3){
+        [Console]::ForegroundColor = $old_fg_color
+    }
+    if($BackgroundColor.Length -ge 3){
+        [Console]::BackgroundColor = $old_bg_color
+    }
+}
+
+# DEFINITION: Pause the programme if debug-var is active.
+Function Invoke-Pause(){
+    if($script:debug -eq 2){Pause}
+}
+
+# DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
+Function Invoke-Close(){
+    if($script:paraGUI -ne 0){$script:Form.Close()}
+    if($script:debug -ne 0){Pause}
+    Exit
+}
+
+# DEFINITION: For the auditory experience:
+Function Start-Sound(){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+        .NOTES
+            Date: 2018-03-12
+
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
+    #>
+    param(
+        [int]$Success = $(return $false)
+    )
+
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
+    }
+}
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: "Select"-Window for buttons to choose a path:
 Function Get-Folder($InOrOut){
@@ -157,20 +283,20 @@ Function Get-Folder($InOrOut){
 
 # DEFINITION: Get all values from user:
 Function Get-UserValues(){
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Variablen von GUI / Parametern holen..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Variablen von GUI / Parametern holen..." -ForegroundColor Cyan
     if($script:paraGUI -ne 0){
         if(!([regex]::Escape($script:WPFtextBoxInput.Text) -match [regex]::Escape('[') -or [regex]::Escape($script:WPFtextBoxInput.Text) -match [regex]::Escape(']') -or [regex]::Escape($script:WPFtextBoxInput.Text) -match [regex]::Escape('|'))){
             $script:paraInput = $script:WPFtextBoxInput.Text
             $korrektIn = 1
         }else{
-            Write-Host 'Eckige Klammern [ ] und Pipes | sind im Quellpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
+            Write-ColorOut 'Eckige Klammern [ ] und Pipes | sind im Quellpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
             $korrektIn = 0
         }
         if(!([regex]::Escape($script:WPFtextBoxOutput.Text) -match [regex]::Escape('[') -or [regex]::Escape($script:WPFtextBoxOutput.Text) -match [regex]::Escape(']') -or [regex]::Escape($script:WPFtextBoxOutput.Text) -match [regex]::Escape('|'))){
             $script:paraOutput = $script:WPFtextBoxOutput.Text
             $korrektOut = 1
         }else{
-            Write-Host 'Eckige Klammern [ ] und Pipes | sind im Zielpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
+            Write-ColorOut 'Eckige Klammern [ ] und Pipes | sind im Zielpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
             $korrektOut = 0
         }
         $script:paraMeth = $script:WPFcomboBoxMeth.SelectedIndex
@@ -182,13 +308,13 @@ Function Get-UserValues(){
         $script:paraRememberPara = $script:WPFcheckBoxRememberPara.IsChecked
     }else{
         if([regex]::Escape($script:paraInput) -match [regex]::Escape('[') -or [regex]::Escape($script:paraInput) -match [regex]::Escape(']') -or [regex]::Escape($scriptparaInput.Text) -match [regex]::Escape('|')){
-            Write-Host 'Eckige Klammern [ ] und Pipes | sind im Quellpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
+            Write-ColorOut 'Eckige Klammern [ ] und Pipes | sind im Quellpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
             $korrektIn = 0
         }else{
             $korrektIn = 1
         }
         if([regex]::Escape($script:paraOutput) -match [regex]::Escape('[') -or [regex]::Escape($script:paraOutput) -match [regex]::Escape(']') -or [regex]::Escape($script:paraOutput) -match [regex]::Escape('|')){
-            Write-Host 'Eckige Klammern [ ] und Pipes | sind im Zielpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
+            Write-ColorOut 'Eckige Klammern [ ] und Pipes | sind im Zielpfad nicht erlaubt. Tut mir leid...' -ForegroundColor Red
             $korrektOut = 0
         }else{
             $korrektOut = 1
@@ -196,42 +322,42 @@ Function Get-UserValues(){
     }
     $script:harddrive = $script:paraOutput.Substring(0, $script:paraOutput.IndexOf(":"))
     if($korrektIn -ne 0 -and $korrektOut -ne 0){
-        Write-Host "Alles okay..." -ForegroundColor Green
+        Write-ColorOut "Alles okay..." -ForegroundColor Green
         return $true
     }else{
-        Write-Host "Nix is okay!" -ForegroundColor Red
+        Write-ColorOut "Nix is okay!" -ForegroundColor Red
         return $false
     }
 }
 
 # DEFINITION: Test paths:
 Function Test-UserPaths(){
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Quell- und Zielpfad testen..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Quell- und Zielpfad testen..." -ForegroundColor Cyan
     if($script:paraInput -eq $script:paraOutput){
-        Write-Host "Quellpfad = Zielpfad. Bitte unterschiedliche, valide Pfade angeben!" -ForegroundColor Red
+        Write-ColorOut "Quellpfad = Zielpfad. Bitte unterschiedliche, valide Pfade angeben!" -ForegroundColor Red
         return $false
     }elseif($script:paraInput.Length -le 1 -or (Test-Path -Path $script:paraInput) -eq $false){
-        Write-Host "Falscher Quellpfad. Bitte einen validen Pfad angeben!" -ForegroundColor Red
+        Write-ColorOut "Falscher Quellpfad. Bitte einen validen Pfad angeben!" -ForegroundColor Red
         return $false
     }elseif($script:paraOutput.Length -le 1 -or (Test-Path -Path $script:paraOutput) -eq $false){
         if((Split-Path -parent $script:paraOutput).Length -ne 0 -and (Test-Path -Path (Split-Path -parent $script:paraOutput) -ErrorAction SilentlyContinue) -eq $true){
-            Write-Host "Zielpfad nicht existent, aber Ueberverzeichnis gefunden. Soll das Verzeichnis erstellt werden?" -ForegroundColor Magenta
+            Write-ColorOut "Zielpfad nicht existent, aber Ueberverzeichnis gefunden. Soll das Verzeichnis erstellt werden?" -ForegroundColor Magenta
             if((Read-Host "'1' (ohne Anfuehrungszeichen) fuer `"ja`", andere Ziffer um den Zielpfad neu auszuwaehlen. Bestaetigen mit Enter") -eq 1){
                 try{
                     New-Item -Path $script:paraOutput -ItemType Directory | Out-Null
-                    Write-Host "$script:paraOutput erstellt." -ForegroundColor Green
+                    Write-ColorOut "$script:paraOutput erstellt." -ForegroundColor Green
                     return $true
                 }
                 catch{
-                    Write-Host "$script:paraOutput konnte nicht erstellt werden - Abbruch!" -ForegroundColor Red
+                    Write-ColorOut "$script:paraOutput konnte nicht erstellt werden - Abbruch!" -ForegroundColor Red
                     return $false
                 }
             }else{
-                Write-Host "Falscher Zielpfad. Bitte einen validen Pfad angeben." -ForegroundColor Red
+                Write-ColorOut "Falscher Zielpfad. Bitte einen validen Pfad angeben." -ForegroundColor Red
                 return $false
             }
         }else{
-            Write-Host "Falscher Zielpfad. Bitte einen validen Pfad angeben." -ForegroundColor Red
+            Write-ColorOut "Falscher Zielpfad. Bitte einen validen Pfad angeben." -ForegroundColor Red
             return $false
         }
     }else{
@@ -241,36 +367,36 @@ Function Test-UserPaths(){
 
 # DEFINITION: If checked, remember values for future use:
 Function Start-Remembering(){
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Einstellungen merken (falls gewaehlt)..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Einstellungen merken (falls gewaehlt)..." -ForegroundColor Cyan
 
     if($script:paraRememberIn -ne 0){
         $lines = (Get-Content $PSCommandPath)
-        Write-Host "Von:`t" -NoNewline; Write-Host $lines[$($script:paramline + 1)] -ForegroundColor Gray
+        Write-ColorOut "Von:`t" -NoNewline; Write-ColorOut $lines[$($script:paramline + 1)] -ForegroundColor Gray
         $lines[$($script:paramline + 1)] = "`t" + '[string]$paraInput=' + "`"$script:paraInput`","
-        Write-Host "Zu:`t" -NoNewline; Write-Host $lines[$($script:paramline + 1)] -ForegroundColor Yellow
+        Write-ColorOut "Zu:`t" -NoNewline; Write-ColorOut $lines[$($script:paramline + 1)] -ForegroundColor Yellow
         $lines | Set-Content $PSCommandPath -Encoding UTF8
     }
     if($script:paraRememberOut -ne 0){
         $lines = (Get-Content $PSCommandPath)
-        Write-Host "Von:`t" -NoNewline; Write-Host $($lines[$($script:paramline + 2)]) -ForegroundColor Gray
+        Write-ColorOut "Von:`t" -NoNewline; Write-ColorOut $($lines[$($script:paramline + 2)]) -ForegroundColor Gray
         $lines[$($script:paramline + 2)] = "`t" + '[string]$paraOutput=' + "`"$script:paraOutput`","
-        Write-Host "Zu:`t" -NoNewline; Write-Host $($lines[$($script:paramline + 2)]) -ForegroundColor Yellow
+        Write-ColorOut "Zu:`t" -NoNewline; Write-ColorOut $($lines[$($script:paramline + 2)]) -ForegroundColor Yellow
         $lines | Set-Content $PSCommandPath -Encoding UTF8
     }
     if($script:paraRememberPara -ne 0){
         $lines = (Get-Content $PSCommandPath)
-        Write-Host "Von:"
+        Write-ColorOut "Von:"
         for($i = $($script:paramline + 3); $i -le $($paramline + 7); $i++){
-            Write-Host "$($lines[$i])" -ForegroundColor Gray
+            Write-ColorOut "$($lines[$i])" -ForegroundColor Gray
         }
         $lines[$($script:paramline + 3)] = "`t" + '[int]$paraMeth=' + "$script:paraMeth,"
         $lines[$($script:paramline + 4)] = "`t" + '[int]$paraMultiThread=' + "$script:paraMultiThread,"
         $lines[$($script:paramline + 5)] = "`t" + '[int]$paraHardware=' + "$script:paraHardware,"
         $lines[$($script:paramline + 6)] = "`t" + '[int]$paraShutdown=' + "$script:paraShutdown,"
         $lines[$($script:paramline + 7)] = "`t" + '[int]$paraGUI=' + "$script:paraGUI,"
-        Write-Host "Zu:"
+        Write-ColorOut "Zu:"
         for($i = $($script:paramline + 3); $i -le $($paramline + 7); $i++){
-            Write-Host "$($lines[$i])" -ForegroundColor Gray
+            Write-ColorOut "$($lines[$i])" -ForegroundColor Gray
         }
         $lines | Set-Content $PSCommandPath -Encoding UTF8
     }
@@ -280,46 +406,46 @@ Function Start-Remembering(){
 # DEFINITION: Searching for selected formats in Input-Path, getting Path, Name, Time, and calculating Hash:
 Function Start-FileSearchAndCheck(){
     # Search files and get some information about them:
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Suche Dateien zusammen, pruefe auf bereits kopierte..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Suche Dateien zusammen, pruefe auf bereits kopierte..." -ForegroundColor Cyan
     [int]$gci = 1
-    Write-Host "Suche Dateien auf SD-Karte:`t" -ForegroundColor Yellow
-    [array]$script:infile_all = @(Get-ChildItem -Path $script:paraOut -Include $script:filterFormat -Recurse | ForEach-Object {Write-Host "$gci " -ForegroundColor Gray -NoNewline; $gci++; $_})
+    Write-ColorOut "Suche Dateien auf SD-Karte:`t" -ForegroundColor Yellow
+    [array]$script:infile_all = @(Get-ChildItem -Path $script:paraOut -Include $script:filterFormat -Recurse | ForEach-Object {Write-ColorOut "$gci " -ForegroundColor Gray -NoNewline; $gci++; $_})
     [array]$infile_all_path = @($script:infile_all.FullName)
     [array]$infile_all_format = @($script:infile_all.Extension)
     [array]$infile_all_date = $script:infile_all | ForEach-Object {$_.LastWriteTime.ToString("yyyy-MM-dd")}
     [array]$infile_all_time = $script:infile_all | ForEach-Object {$_.LastWriteTime.ToString("HH-mm-ss")}
     [array]$infile_all_size = $script:infile_all | ForEach-Object {$_.Length / 1kB}
     [array]$infile_all_change = $script:infile_all | ForEach-Object {$_.LastWriteTime.ToString("yyyy-MM-dd_HH-mm-ss")}
-    Write-Host "`r`n`r`n$($infile_all_path.Length)" -NoNewline -ForegroundColor DarkYellow; Write-Host  " Dateien auf SD-Karte gefunden.`r`n" -ForegroundColor Yellow
+    Write-ColorOut "`r`n`r`n$($infile_all_path.Length)" -NoNewline -ForegroundColor DarkYellow; Write-ColorOut  " Dateien auf SD-Karte gefunden.`r`n" -ForegroundColor Yellow
     [int]$gci = 1
-    Write-Host "Suche Dateien im Zielpfad:`t" -ForegroundColor Yellow
-    [array]$existingfile_all = @(Get-ChildItem -Path $script:paraOut -Include $script:FilterFormat -Recurse | ForEach-Object {Write-Host "$gci " -ForegroundColor Gray -NoNewline; $gci++; $_})
+    Write-ColorOut "Suche Dateien im Zielpfad:`t" -ForegroundColor Yellow
+    [array]$existingfile_all = @(Get-ChildItem -Path $script:paraOut -Include $script:FilterFormat -Recurse | ForEach-Object {Write-ColorOut "$gci " -ForegroundColor Gray -NoNewline; $gci++; $_})
     [array]$existingfile_all_path = @($existingfile_all.FullName)
     [array]$existingfile_all_all_size = $existingfile_all | ForEach-Object {$_.Length / 1kB}
     [array]$existingfile_all_all_change = $existingfile_all | ForEach-Object {$_.LastWriteTime.ToString("yyyy-MM-dd_HH-mm-ss")}
-    Write-Host "`r`n`r`n$($existingfile_all_path.Length)" -NoNewline -ForegroundColor DarkYellow; Write-Host  " Dateien im Zielpfad gefunden.`r`n" -ForegroundColor Yellow
+    Write-ColorOut "`r`n`r`n$($existingfile_all_path.Length)" -NoNewline -ForegroundColor DarkYellow; Write-ColorOut  " Dateien im Zielpfad gefunden.`r`n" -ForegroundColor Yellow
     Invoke-Pause
 
     if($existingfile_all_path.Length -eq 0){
-        Write-Host "Ueberpruefung auf Duplikate sinnlos, da Zielordner leer ist. Weiter im Programm..." -ForegroundColor Green
+        Write-ColorOut "Ueberpruefung auf Duplikate sinnlos, da Zielordner leer ist. Weiter im Programm..." -ForegroundColor Green
         [array]$script:infile_sort_path = $infile_all_path
         [array]$script:infile_sort_format = $infile_all_format
         [array]$script:infile_sort_date = $infile_all_date
         [array]$script:infile_sort_time = $infile_all_time
         [array]$script:infile_sort_size = $infile_all_size
     }else{
-        Write-Host "Ueberpruefe auf Duplikate:`t" -ForegroundColor Yellow
+        Write-ColorOut "Ueberpruefe auf Duplikate:`t" -ForegroundColor Yellow
         [array]$duplicate_index = @()
         for($i = 0; $i -lt $infile_all_path.Length; $i++){
             $j = 0
             while($true){
                 if($infile_all_change[$i] -eq $existingfile_all_change[$j] -and $infile_all_size[$i] -eq $existingfile_all_all_size[$j]){
                     $duplicate_index += $i
-                    Write-Host "$($i + 1) " -ForegroundColor DarkGreen
+                    Write-ColorOut "$($i + 1) " -ForegroundColor DarkGreen
                     break
                 }else{
                     if($j -ge $existingfile_all_path.Length){
-                        Write-Host "$($i + 1) " -ForegroundColor Gray
+                        Write-ColorOut "$($i + 1) " -ForegroundColor Gray
                         break
                     }
                     $j++
@@ -346,7 +472,7 @@ Function Start-FileSearchAndCheck(){
     }
     Clear-Variable -Name infile_all_*, existingfile*
 
-    Write-Host "Auf Kopieren vorbereiten..." -ForegroundColor Cyan
+    Write-ColorOut "Auf Kopieren vorbereiten..." -ForegroundColor Cyan
     [array]$script:outfile_path = @()
     [array]$inter = @()
     [array]$interfolder = @()
@@ -355,16 +481,16 @@ Function Start-FileSearchAndCheck(){
     for($i = 0; $i -lt $script:infile_sort_path.Length; $i++){
         $inter = @("$($script:paraOut)\$($script:infile_sort_date[$i])\$($script:infile_sort_time[$i])$($script:infile_sort_format[$i])")
         if((Test-Path -Path "$inter") -eq $false){
-            if($script:debug -ne 0){Write-Host "`r`n$($script:infile_sort_time[$i])" -NoNewline; Write-Host "`t- File 404" -ForegroundColor Green -NoNewline}
+            if($script:debug -ne 0){Write-ColorOut "`r`n$($script:infile_sort_time[$i])" -NoNewline; Write-ColorOut "`t- File 404" -ForegroundColor Green -NoNewline}
             $j = 1
             while($true){
                 if($inter -in $script:outfile_path){
-                    if($script:debug -ne 0){Write-Host " - $($j - 1) (already in variable)" -NoNewline}
+                    if($script:debug -ne 0){Write-ColorOut " - $($j - 1) (already in variable)" -NoNewline}
                     $inter = @("$($script:paraOut)\$($script:infile_sort_date[$i])\$($script:infile_sort_time[$i])_file$j$($script:infile_sort_format[$i])")
                     $j++
                     continue
                 }else{
-                    if($script:debug -ne 0){Write-Host " - $($j - 1) (Original)" -NoNewline}
+                    if($script:debug -ne 0){Write-ColorOut " - $($j - 1) (Original)" -NoNewline}
                     $script:outfile_path += $inter
                     $script:copystring += $inter.Replace($($script:infile_sort_format[$i]),'')
                     Break
@@ -373,11 +499,11 @@ Function Start-FileSearchAndCheck(){
         }Else{
             $j = 1
             $inter = @("$($script:paraOut)\$($script:infile_sort_date[$i])\$($script:infile_sort_time[$i])_copy$j$($script:infile_sort_format[$i])")
-            if($script:debug -ne 0){Write-Host "`r`n$($script:infile_sort_time[$i])" -NoNewline; Write-Host "`t- File Found" -ForegroundColor Magenta -NoNewline}
+            if($script:debug -ne 0){Write-ColorOut "`r`n$($script:infile_sort_time[$i])" -NoNewline; Write-ColorOut "`t- File Found" -ForegroundColor Magenta -NoNewline}
             while($true){
                 if((Test-Path -Path "$inter") -eq $false){
                     if(!($inter -in $script:outfile_path)){
-                        if($script:debug -ne 0){Write-Host " - copy$j okay." -NoNewline}
+                        if($script:debug -ne 0){Write-ColorOut " - copy$j okay." -NoNewline}
                         $script:outfile_path += $inter
                         $script:copystring += $inter.Replace($($script:infile_sort_format[$i]),'')
                         break
@@ -386,12 +512,12 @@ Function Start-FileSearchAndCheck(){
                         while($true){
                             $inter = @("$($script:paraOut)\$($script:infile_sort_date[$i])\$($script:infile_sort_time[$i])_copy$j_file$k$($script:infile_sort_format[$i])")
                             if(!($inter -in $script:outfile_path)){
-                                if($script:debug -ne 0){Write-Host " - copy$j file$k okay." -NoNewline}
+                                if($script:debug -ne 0){Write-ColorOut " - copy$j file$k okay." -NoNewline}
                                 $script:outfile_path += $inter
                                 $script:copystring += $inter.Replace($($script:infile_sort_format[$i]),'')
                                 break
                             }else{
-                                if($script:debug -ne 0){Write-Host " - copy$j file$k already in variable." -NoNewline}
+                                if($script:debug -ne 0){Write-ColorOut " - copy$j file$k already in variable." -NoNewline}
                                 $k++
                                 continue
                             }
@@ -399,7 +525,7 @@ Function Start-FileSearchAndCheck(){
                         break
                     }
                 }Else{
-                    if($script:debug -ne 0){Write-Host " - copy$j also on HDD." -NoNewline}
+                    if($script:debug -ne 0){Write-ColorOut " - copy$j also on HDD." -NoNewline}
                     $j++
                     Continue
                 }
@@ -417,12 +543,12 @@ Function Start-FileCopy(){
                 $activeProcessCounter = @(Get-Process -ErrorAction SilentlyContinue -Name xcopy).count
                 Start-Sleep -Milliseconds 75
             }
-            Write-Host "$($i + 1)/$($script:outfile_path.Length): " -NoNewLine
+            Write-ColorOut "$($i + 1)/$($script:outfile_path.Length): " -NoNewLine
             $inter = ($($script:infile_sort_path[$i]).Replace($script:paraInput,'.')) + "`t"
-            Write-Host $inter -NoNewLine -ForegroundColor Cyan
-            Write-Host "-> "  -NoNewLine
+            Write-ColorOut $inter -NoNewLine -ForegroundColor Cyan
+            Write-ColorOut "-> "  -NoNewLine
             $inter = ($($script:outfile_path[$i]).Replace($script:paraOutput,'.'))
-            Write-Host $inter -ForegroundColor Yellow
+            Write-ColorOut $inter -ForegroundColor Yellow
             Start-Process xcopy -ArgumentList "`"$($script:infile_sort_path[$i])`" `"$($script:copystring[$i]).*`" /q /i /j /-y" -WindowStyle Hidden
             Start-Sleep -Milliseconds 1
             $activeProcessCounter++
@@ -449,30 +575,30 @@ Function Start-FileVerification(){
         if($script:secondattempt -eq 1 -and $i -in $notyetbroken -or $script:secondattempt -eq 0){
             if((Test-Path -Path "$($script:outfile_path[$i])") -eq $true){
                 if($($script:infile_sort_size[$i]) -ne $($script:outfile_size[$i]) -and $script:infile_sort_change -ne $script:outfile_change){
-                    Write-Host "$($i + 1) " -NoNewline -ForegroundColor Red
+                    Write-ColorOut "$($i + 1) " -NoNewline -ForegroundColor Red
                     $script:brokenfile_index += $i
                     Rename-Item -Path "$($script:outfile_path[$i])" -NewName "$($script:outfile_path[$i])_broken"
                 }else{
-                    Write-Host "$($i + 1) " -NoNewline -ForegroundColor DarkGreen
+                    Write-ColorOut "$($i + 1) " -NoNewline -ForegroundColor DarkGreen
                     [array]$script:verifile_all += $outfile_all[$i]
                 }
             }else{
-                Write-Host "$($i + 1)" -NoNewline -ForegroundColor White -BackgroundColor Red; Write-Host " " -NoNewline
+                Write-ColorOut "$($i + 1)" -NoNewline -ForegroundColor White -BackgroundColor Red; Write-ColorOut " " -NoNewline
                 $script:brokenfile_index += $i
                 New-Item -Path "$($script:outfile_path[$i])_broken" | Out-Null
             }
         }
     }
     if($script:brokenfile_index.Length -ne 0){
-        Write-Host "`r`n`r`nFEHLERHAFTE DATEI(EN):" -ForegroundColor Red
+        Write-ColorOut "`r`n`r`nFEHLERHAFTE DATEI(EN):" -ForegroundColor Red
         for($i = 0; $i -lt $script:outfile_path.Length; $i++){
             if($i -in $script:brokenfile_index){
-                Write-Host $script:outfile_path[$i]
+                Write-ColorOut $script:outfile_path[$i]
             }
         }
-        Write-Host " "
+        Write-ColorOut " "
     }Else{
-        Write-Host "`r`n`r`nAlle Dateien erfolgreich kopiert!`r`n" -ForegroundColor Green
+        Write-ColorOut "`r`n`r`nAlle Dateien erfolgreich kopiert!`r`n" -ForegroundColor Green
     }
     [array]$script:verifile_all_path = $script:verifile_all | ForEach-Object {$_.FullName}
     [array]$script:verifile_all_date = $script:verifile_all | ForEach-Object {$_.LastWriteTime.ToString("yyyy-MM-dd")}
@@ -482,7 +608,7 @@ Function Start-FileVerification(){
 
 # DEFINITION: Burnin-Coding:
 Function Start-KodiererBurnin(){
-	Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Brenne Zeitangabe in Videodateien ein..."  -ForegroundColor Cyan
+	Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Brenne Zeitangabe in Videodateien ein..."  -ForegroundColor Cyan
 
     if($para:userMeth -ne 0){
         $verifile_all = (Get-ChildItem -Path "$script:paraOutput" -Include $script:filterFormat -Recurse)
@@ -499,7 +625,7 @@ Function Start-KodiererBurnin(){
             Start-Sleep -Milliseconds 50
         }
         Start-Process -FilePath "$script:paraEncoder" -ArgumentList $filterbefehl -NoNewWindow
-        Write-Host "$($i + 1)/$($script:verifile_all_path.Length)`t" -NoNewline -ForegroundColor Gray
+        Write-ColorOut "$($i + 1)/$($script:verifile_all_path.Length)`t" -NoNewline -ForegroundColor Gray
         $activeProcessCounter++
     }
 
@@ -508,19 +634,19 @@ Function Start-KodiererBurnin(){
         Start-Sleep -Milliseconds 100
     }
     Pop-Location -StackName "KameraGUI"
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Burn-In-Kodierung fertig.`r`n"  -ForegroundColor Green
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Burn-In-Kodierung fertig.`r`n"  -ForegroundColor Green
 }
 
 # DEFINITION: Start concatenate:
 Function Start-KodiererConcat(){
-	Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Suche Dateien zusammen..."  -ForegroundColor Cyan
+	Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Suche Dateien zusammen..."  -ForegroundColor Cyan
 
     [array]$script:unterordner_name = @(Sort-Object -InputObject $script:verifile_all_date -Unique)
 
     for($i=0; $i -lt $script:unterordner_name.Length; $i++){
         for($j=1; $j -le 4; $j ++){
             try{Copy-Item "$($PSScriptRoot)\cam_dummy_original.mkv" "$script:paraOutput\$($script:unterordner_name[$i])\cam$($j)_dummy.mkv"}
-            catch{Write-Host "Konnte $($PSScriptRoot)\cam_dummy_original.mkv nicht finden. Bitte sicherstellen, dass Datei im selben Ordner ist wie dieses Skript ($($PSScriptRoot)) und Enter druecken." -ForegroundColor Red; continue}
+            catch{Write-ColorOut "Konnte $($PSScriptRoot)\cam_dummy_original.mkv nicht finden. Bitte sicherstellen, dass Datei im selben Ordner ist wie dieses Skript ($($PSScriptRoot)) und Enter druecken." -ForegroundColor Red; continue}
             Start-Sleep -Milliseconds 100
             $filesForConcat = @(Get-ChildItem "$script:paraOutput\$($script:unterordner_name[$i])\cam$($j)*.*" -Exclude $script:filterFormat | ForEach-Object {$_.Name})
             if($filesForConcat.Length -gt 1){
@@ -534,10 +660,10 @@ Function Start-KodiererConcat(){
         }
     }
 
-    Write-Host "Schreibe Dateien zusammen fuer..." -ForegroundColor Yellow
+    Write-ColorOut "Schreibe Dateien zusammen fuer..." -ForegroundColor Yellow
     [int]$activeProcessCounter = 0
     for($i=0; $i -lt $script:unterordner_name.Length; $i++){
-        Write-Host $script:unterordner_name[$i] -ForegroundColor Yellow
+        Write-ColorOut $script:unterordner_name[$i] -ForegroundColor Yellow
         for($j=0; $j -lt 4; $j++){
             $fileConcatText = @(Get-ChildItem "$script:paraOutput\$($script:unterordner_name[$i])\camera$($j + 1).txt" -ErrorAction SilentlyContinue | ForEach-Object {$_.FullName})
             if($fileConcatText.Length -ne 0){
@@ -559,12 +685,12 @@ Function Start-KodiererConcat(){
         $activeProcessCounter = @(Get-Process -ErrorAction SilentlyContinue -Name ffmpeg).count
         Start-Sleep -Milliseconds 100
     }
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Zusammenschreiben fertig.`r`n" -ForegroundColor Green
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Zusammenschreiben fertig.`r`n" -ForegroundColor Green
 }
 
 # DEFINITION: Start Quad-Coding:
 Function Start-KodiererQuad(){
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Beginn Vierfach-Screen-Erstellung..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Beginn Vierfach-Screen-Erstellung..." -ForegroundColor Cyan
 
     [array]$unterordner_alle = @(Get-ChildItem -Directory)
     [array]$unterordner_pfade = @($unterordner_alle | ForEach-Object {$_.FullName})
@@ -583,7 +709,7 @@ Function Start-KodiererQuad(){
                 $activeProcessCounter = @(Get-Process -ErrorAction SilentlyContinue -Name ffmpeg).count
                 Start-Sleep -Milliseconds 50
             }
-            Write-Host "$($unterordner_name[$i])`t" -NoNewline -ForegroundColor Yellow
+            Write-ColorOut "$($unterordner_name[$i])`t" -NoNewline -ForegroundColor Yellow
             Start-Process -FilePath "$script:paraEncoder" -ArgumentList $filterbefehl -NoNewWindow
             Start-Sleep -Milliseconds 1
             $activeProcessCounter++
@@ -598,64 +724,40 @@ Function Start-KodiererQuad(){
         Move-Item "$($script:paraOutput)\$($script:unterordner_name[$i])\quadscreen.mkv" "$script:paraOutput\$($unterordner_namen[$i])_quad.mkv" | Out-Null
     }
     Start-Sleep -Seconds 5
-	Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Fertig kodiert!`r`n" -ForegroundColor Green
+	Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Fertig kodiert!`r`n" -ForegroundColor Green
 }
 
 # DEFINITION: Delete old files Zahl f. Usereingabe
 Function Start-Loesch($LoeschUser){
-    Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Starte Loesch-Funktion f. Zwischendateien..." -ForegroundColor Cyan
+    Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Starte Loesch-Funktion f. Zwischendateien..." -ForegroundColor Cyan
     while($true){
         if($LoeschUser -ne 0){
-            Write-Host "BITTE UM BESTAETIGUNG!`r`n" -ForegroundColor Red -BackgroundColor White
-            Write-Host "Dieses Script loescht alle Dateien im Ordner" -NoNewline -ForegroundColor White -BackgroundColor Red
-            Write-Host " $script:paraOutput " -NoNewline -ForegroundColor Cyan
-            Write-Host "und dessen Unterordnern," -ForegroundColor White -BackgroundColor Red
-            Write-Host "die mit" -NoNewline -ForegroundColor White -BackgroundColor Red
-            Write-Host " `"cam`" " -NoNewline -ForegroundColor Yellow
-            Write-Host "beginnen und die Dateiendung" -NoNewline -ForegroundColor White -BackgroundColor Red
-            Write-Host " `".txt`" " -NoNewline -ForegroundColor Yellow
-            Write-Host "oder" -NoNewline -ForegroundColor White -BackgroundColor Red
-            Write-Host " `".mkv`" " -NoNewline -ForegroundColor Yellow
-            Write-Host "tragen!`r`n" -ForegroundColor White -BackgroundColor Red
-            Write-Host "Sicher, dass der angegebene Ordner ( `"$script:paraOutput`" ) stimmt?" -ForegroundColor Red
+            Write-ColorOut "BITTE UM BESTAETIGUNG!`r`n" -ForegroundColor Red -BackgroundColor White
+            Write-ColorOut "Dieses Script loescht alle Dateien im Ordner" -NoNewline -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut " $script:paraOutput " -NoNewline -ForegroundColor Cyan
+            Write-ColorOut "und dessen Unterordnern," -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut "die mit" -NoNewline -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut " `"cam`" " -NoNewline -ForegroundColor Yellow
+            Write-ColorOut "beginnen und die Dateiendung" -NoNewline -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut " `".txt`" " -NoNewline -ForegroundColor Yellow
+            Write-ColorOut "oder" -NoNewline -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut " `".mkv`" " -NoNewline -ForegroundColor Yellow
+            Write-ColorOut "tragen!`r`n" -ForegroundColor White -BackgroundColor Red
+            Write-ColorOut "Sicher, dass der angegebene Ordner ( `"$script:paraOutput`" ) stimmt?" -ForegroundColor Red
             [int]$sicher = Read-Host "`"1`" zum Bestaetigen, eine andere Ziffer zum Ablehnen. Bestaetigung mit Enter"
-            Write-Host " "
+            Write-ColorOut " "
             if($sicher -ne 1){
-                Write-Host "Abbruch durch Benutzer." -ForegroundColor Green
+                Write-ColorOut "Abbruch durch Benutzer." -ForegroundColor Green
                 break
             }
         }
-        Write-Host "Loesche zwischengespeicherte Dateien..." -ForegroundColor Yellow
+        Write-ColorOut "Loesche zwischengespeicherte Dateien..." -ForegroundColor Yellow
         Get-ChildItem "$script:paraOutput\*" -Include *.txt, *.mkv -Recurse | Remove-Item -Include cam*.*
         Start-Sleep -Seconds 5
         Start-Process powershell -ArgumentList "Write-VolumeCache -DriveLetter $script:harddrive" -WindowStyle Hidden -Wait
         Start-Sleep -Seconds 1
-        Write-Host "$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - Loeschen beendet!`r`n" -ForegroundColor Green
+        Write-ColorOut "$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - Loeschen beendet!`r`n" -ForegroundColor Green
         break
-    }
-}
-
-# DEFINITION: Pause the programme if debug-var is active.
-Function Invoke-Pause(){
-    if($script:debug -eq 2){Pause}
-}
-
-# DEFINITION: Exit the program (and close all windows) + option to pause before exiting.
-Function Invoke-Close(){
-    if($script:paraGUI -ne 0){$script:Form.Close()}
-    if($script:debug -ne 0){Pause}
-    Exit
-}
-
-# DEFINITION: For the auditory experience:
-Function Start-Sound($success){
-    $sound = new-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
-    if($success -eq 1){
-        $sound.SoundLocation="c:\WINDOWS\Media\tada.wav"
-        $sound.Play()
-    }else{
-        $sound.SoundLocation="c:\WINDOWS\Media\chimes.wav"
-        $sound.Play()
     }
 }
 
@@ -663,9 +765,9 @@ Function Start-Sound($success){
 Function Start-Everything(){
     while($true){
         Clear-Host
-        Write-Host "     Hallo bei Flos Ueberwachungskamera-Skript v2.6!     `r`n" -ForegroundColor DarkCyan -BackgroundColor Gray
+        Write-ColorOut "     Hallo bei Flos Ueberwachungskamera-Skript v2.6!     `r`n" -ForegroundColor DarkCyan -BackgroundColor Gray
         if((Get-UserValues) -eq $false){
-            Start-Sound(0)
+            Start-Sound 0
             Start-Sleep -Seconds 2
             if($script:paraGUI -ne 0){
                 $script:Form.WindowState ='Normal'
@@ -673,7 +775,7 @@ Function Start-Everything(){
             break
         }
         if((Test-UserPaths) -eq $false){
-            Start-Sound(0)
+            Start-Sound 0
             Start-Sleep -Seconds 2
             if($script:paraGUI -ne 0){
                 $script:Form.WindowState ='Normal'
@@ -691,7 +793,7 @@ Function Start-Everything(){
             if($script:paraShutdown -eq 0 -or ($script:paraShutdown -eq 1 -and $script:paraMeth -eq 2)){$shutdown = 0}else{$shutdown = 1}
             Start-Process powershell -ArgumentList "$PSScriptRoot\preventsleep.ps1 -fileToCheck `"$PSScriptRoot\fertig.txt`" -mode 0 -userProcessCount 2 -userProcess `"ffmpeg`",`"robocopy`" -timeBase 300 -shutdown $shutdown -counterMax 10" -WindowStyle Minimized
         }else{
-            Write-Host "Kann .\preventsleep.ps1 nicht finden, daher kann Standby nicht verhindert werden." -ForegroundColor Magenta
+            Write-ColorOut "Kann .\preventsleep.ps1 nicht finden, daher kann Standby nicht verhindert werden." -ForegroundColor Magenta
             Start-Sleep -Seconds 3
         }
 
@@ -707,7 +809,7 @@ Function Start-Everything(){
         }Else{
             $meldung += "PC wird nach Beendigung nicht heruntergefahren."
         }
-        Write-Host $meldung[0] -NoNewline -ForegroundColor Yellow; Write-Host " - $($meldung[1])" -ForegroundColor Cyan
+        Write-ColorOut $meldung[0] -NoNewline -ForegroundColor Yellow; Write-ColorOut " - $($meldung[1])" -ForegroundColor Cyan
         
         if($script:paraMeth -eq 0){
             Start-FileSearchAndCheck
@@ -730,8 +832,8 @@ Function Start-Everything(){
             Start-Loesch(0)
             Invoke-Pause
         }
-        Write-Host "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-Host " - PROGRAMM FERTIG!" -ForegroundColor DarkCyan
-        Start-Sound(1)
+        Write-ColorOut "`r`n$(Get-Date -Format "dd.MM.yy HH:mm:ss")" -NoNewline; Write-ColorOut " - PROGRAMM FERTIG!" -ForegroundColor DarkCyan
+        Start-Sound 1
         Start-Sleep -Seconds 2
         "1" | Out-File -FilePath $PSScriptRoot\fertig.txt -Encoding utf8
         Break

@@ -1,5 +1,4 @@
 #requires -version 3
-#requires -module PoshRSJob
 
 <#
     .SYNOPSIS
@@ -39,8 +38,42 @@ param(
     [int]$debug = 0
 )
 
-# Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Get all error-outputs in English:
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+# DEFINITION: Hopefully avoiding errors by wrong encoding now:
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    [Console]::InputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+# DEFINITION: Load PoshRSJob:
+    try{
+        Import-Module -Name "PoshRSJob" -NoClobber -Global -ErrorAction Stop
+    }catch{
+        try{
+            [string]$PoshRSJobPath = Get-ChildItem -LiteralPath $PSScriptRoot\Modules\PoshRSJob -Recurse -Filter PoshRSJob.psm1 -ErrorAction Stop | Select-Object -ExpandProperty FullName
+            Import-Module $PoshRSJobPath -NoClobber -Global -ErrorAction Stop
+        }catch{
+            Write-Host "Could not load Module `"PoshRSJob`" - Please install it in an " -ForegroundColor Red -NoNewline
+            Write-Host "administrative console " -ForegroundColor Yellow -NoNewline
+            Write-Host "via " -ForegroundColor Red -NoNewline
+            Write-Host "Install-Module PoshRSJob" -NoNewline
+            Write-Host ", download it from " -ForegroundColor Red -NoNewline
+            Write-Host "github.com/proxb/PoshRSJob/releases " -NoNewline
+            Write-Host "and install it to " -ForegroundColor Red -NoNewline
+            Write-Host "<SCRIPT_PATH>\Modules\PoshRSJob\<VERSION.NUMBER>" -NoNewline -ForegroundColor Gray
+            Write-Host "." -ForegroundColor Red
+            Pause
+            Exit
+        }
+    }
+
+# If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
+[int]$getWPF = 0
+
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining generic functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -50,7 +83,7 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2018-05-22
         
         .PARAMETER Object
             String to write out
@@ -60,16 +93,16 @@ Function Write-ColorOut(){
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Object,
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -81,7 +114,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -104,16 +137,6 @@ Function Write-ColorOut(){
         [Console]::BackgroundColor = $old_bg_color
     }
 }
-
-# If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
-[int]$getWPF = 0
-
-
-# ==================================================================================================
-# ==============================================================================
-#   Defining Functions:
-# ==============================================================================
-# ==================================================================================================
 
 # DEFINITION: Pause the programme if debug-var is active. Also, enable measuring times per command with -debug 3.
 Function Invoke-Pause(){
@@ -149,31 +172,45 @@ Function Invoke-Close(){
 }
 
 # DEFINITION: For the auditory experience:
-Function Start-Sound($success){
+Function Start-Sound(){
     <#
         .SYNOPSIS
             Gives auditive feedback for fails and successes
-        
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
-
         .NOTES
-            Date: 2018-08-22
+            Date: 2018-03-12
 
-        .PARAMETER success
-            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
         
         .EXAMPLE
-            For success: Start-Sound(1)
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
     #>
-    $sound = New-Object System.Media.SoundPlayer -ErrorAction SilentlyContinue
-    if($success -eq 1){
-        $sound.SoundLocation = "C:\Windows\Media\tada.wav"
-    }else{
-        $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+    param(
+        [int]$Success = $(return $false)
+    )
+
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
     }
-    $sound.Play()
 }
+
+# ==================================================================================================
+# ==============================================================================
+#    Defining specific functions:
+# ==============================================================================
+# ==================================================================================================
 
 
 # DEFINITION: "Select"-Window for buttons to choose a path.
@@ -233,7 +270,7 @@ Function Test-Everything(){
 # DEFINITION: Start everything:
 Function Start-Everything(){
     if(Test-Everything -eq $false){
-        Start-Sound(0)
+        Start-Sound 0
         Invoke-Close
     }else{
         Start-RSJob -Name "PreventStandby" -Throttle 1 -ScriptBlock {
@@ -254,7 +291,7 @@ Function Start-Everything(){
         Get-RSJob | Remove-RSJob
 
         Write-ColorOut "Done!" -ForegroundColor Green
-        Start-Sound(1)
+        Start-Sound 1
     }
 }
 

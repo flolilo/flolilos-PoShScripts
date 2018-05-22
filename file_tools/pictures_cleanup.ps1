@@ -66,15 +66,16 @@ param(
 [int]$confirm = $Debug
 
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    [Console]::InputEncoding = New-Object -TypeName System.Text.UTF8Encoding
 # DEFINITION: Load Module "Recycle" for moving files to bin instead of removing completely.
-if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
-    Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
-    Start-Sleep -Seconds 5
-    Exit
-}
+    if((Get-Module -ListAvailable -Name "Recycle") -eq $false){
+        Write-Host "Module `"Recycle`" does not exist! Please install it via `"Get-Module Recycle`"." -ForegroundColor Red
+        Start-Sleep -Seconds 5
+        Exit
+    }
 
 # ==================================================================================================
 # ==============================================================================
@@ -90,25 +91,22 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-30
+            Date: 2018-05-22
         
         .PARAMETER Object
-            String to write out. Mandatory, but will take every non-parametised value.
+            String to write out
         .PARAMETER ForegroundColor
             Color of characters. If not specified, uses color that was set before calling. Valid: White (PS-Default), Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkMagenta, DarkBlue
         .PARAMETER BackgroundColor
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
-        .PARAMETER Indentation
-            Will move the cursor n blocks to the right, creating a possibility to indent the output without using "    " or "`t".
 
         .EXAMPLE
             Just use it like Write-Host.
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Object,
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
 
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
@@ -156,7 +154,7 @@ Function Start-Sound(){
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
         .NOTES
-            Date: 2018-10-25
+            Date: 2018-03-12
 
         .PARAMETER Success
             1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
@@ -167,9 +165,9 @@ Function Start-Sound(){
             For fail: Start-Sound 0
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [int]$Success
+        [int]$Success = $(return $false)
     )
+
     try{
         $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
         if($Success -eq 1){

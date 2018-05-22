@@ -68,9 +68,34 @@ param(
     [int]$Debug=0
 )
 # DEFINITION: Get all error-outputs in English:
-[Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
+    [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
 # DEFINITION: Hopefully avoiding errors by wrong encoding now:
-$OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    $OutputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+    [Console]::InputEncoding = New-Object -TypeName System.Text.UTF8Encoding
+
+# DEFINITION: Set default ErrorAction to Stop: CREDIT: https://stackoverflow.com/a/21260623/8013879
+if($Debug -eq 0){
+    $PSDefaultParameterValues = @{}
+    $PSDefaultParameterValues += @{'*:ErrorAction' = 'Stop'}
+    $ErrorActionPreference = 'Stop'
+}else{
+    Write-Host "PID = $($pid)" -ForegroundColor Magenta -BackgroundColor DarkGray
+}
+
+# DEFINITION: Some relevant variables from the start:
+# First line of "param" (for remembering/restoring parameters):
+[int]$paramline = 59
+# If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
+[int]$getWPF = 0
+# Creating it here for Invoke-Close:
+[int]$preventstandbyid = 999999999
+
+
+# ==================================================================================================
+# ==============================================================================
+#   Defining generic Functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: Making Write-Host much, much faster:
 Function Write-ColorOut(){
@@ -80,7 +105,7 @@ Function Write-ColorOut(){
         .DESCRIPTION
             Using the [Console]-commands to make everything faster.
         .NOTES
-            Date: 2017-10-03
+            Date: 2018-05-22
         
         .PARAMETER Object
             String to write out
@@ -90,16 +115,16 @@ Function Write-ColorOut(){
             Color of background. If not specified, uses color that was set before calling. Valid: DarkMagenta (PS-Default), White, Red, Yellow, Cyan, Green, Gray, Magenta, Blue, Black, DarkRed, DarkYellow, DarkCyan, DarkGreen, DarkGray, DarkBlue
         .PARAMETER NoNewLine
             When enabled, no line-break will be created.
+
+        .EXAMPLE
+            Just use it like Write-Host.
     #>
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Object,
+        [string]$Object = "Write-ColorOut was called, but no string was transfered.",
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$ForegroundColor,
 
-        [Parameter(Mandatory=$false)]
         [ValidateSet("DarkBlue","DarkGreen","DarkCyan","DarkRed","Blue","Green","Cyan","Red","Magenta","Yellow","Black","DarkGray","Gray","DarkYellow","White","DarkMagenta")]
         [string]$BackgroundColor,
 
@@ -111,7 +136,7 @@ Function Write-ColorOut(){
 
     if($ForegroundColor.Length -ge 3){
         $old_fg_color = [Console]::ForegroundColor
-        [Console]::ForegroundColor = $ForeGroundColor
+        [Console]::ForegroundColor = $ForegroundColor
     }
     if($BackgroundColor.Length -ge 3){
         $old_bg_color = [Console]::BackgroundColor
@@ -134,30 +159,6 @@ Function Write-ColorOut(){
         [Console]::BackgroundColor = $old_bg_color
     }
 }
-
-# DEFINITION: Set default ErrorAction to Stop: CREDIT: https://stackoverflow.com/a/21260623/8013879
-if($Debug -eq 0){
-    $PSDefaultParameterValues = @{}
-    $PSDefaultParameterValues += @{'*:ErrorAction' = 'Stop'}
-    $ErrorActionPreference = 'Stop'
-}else{
-    Write-ColorOut "PID = $($pid)" -ForegroundColor Magenta -BackgroundColor DarkGray
-}
-
-# DEFINITION: Some relevant variables from the start:
-# First line of "param" (for remembering/restoring parameters):
-[int]$paramline = 59
-# If you want to see the variables (buttons, checkboxes, ...) the GUI has to offer, set this to 1:
-[int]$getWPF = 0
-# Creating it here for Invoke-Close:
-[int]$preventstandbyid = 999999999
-
-
-# ==================================================================================================
-# ==============================================================================
-#   Defining Functions:
-# ==============================================================================
-# ==================================================================================================
 
 # DEFINITION: Pause the programme if debug-var is active. Also, enable measuring times per command with -debug 3.
 Function Invoke-Pause(){
@@ -189,23 +190,27 @@ Function Invoke-Close(){
 }
 
 # DEFINITION: For the auditory experience:
-Function Start-Sound($Success){
+Function Start-Sound(){
     <#
         .SYNOPSIS
             Gives auditive feedback for fails and successes
-        
         .DESCRIPTION
             Uses SoundPlayer and Windows's own WAVs to play sounds.
-
         .NOTES
-            Date: 2018-08-22
+            Date: 2018-03-12
 
-        .PARAMETER success
-            If 1 it plays Windows's "tada"-sound, if 0 it plays Windows's "chimes"-sound.
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
         
         .EXAMPLE
-            For success: Start-Sound(1)
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
     #>
+    param(
+        [int]$Success = $(return $false)
+    )
+
     try{
         $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
         if($Success -eq 1){
@@ -215,10 +220,16 @@ Function Start-Sound($Success){
         }
         $sound.Play()
     }catch{
-        Write-Host "`a"
+        Write-Output "`a"
     }
 }
 
+
+# ==================================================================================================
+# ==============================================================================
+#   Defining specific Functions:
+# ==============================================================================
+# ==================================================================================================
 
 # DEFINITION: "Select"-Window for buttons to choose a path.
 Function Get-Folder($InOut){
@@ -405,7 +416,7 @@ Function Start-Everything(){
     $script:timer = [diagnostics.stopwatch]::StartNew()
     while($true){
         if((Get-UserValues) -eq $false){
-            Start-Sound(0)
+            Start-Sound 0
             Start-Sleep -Seconds 2
             if($script:GUI_CLI_Direct -eq "GUI"){
                 Start-GUI
@@ -441,9 +452,9 @@ Function Start-Everything(){
     Write-ColorOut "$differences differenes found." -ForegroundColor Yellow -Indentation 4
     Write-ColorOut "                                                                                `r`n" -BackgroundColor Gray
     if($differences -eq 0){
-        Start-Sound(1)
+        Start-Sound 1
     }else{
-        Start-Sound(0)
+        Start-Sound 0
     }
     
     if($script:PreventStandby -eq 1){

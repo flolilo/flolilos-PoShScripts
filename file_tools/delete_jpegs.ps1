@@ -1,49 +1,9 @@
 #requires -version 3
 
-<#
-    .SYNOPSIS
-        Lists file-types in folder(s).
-
-    .DESCRIPTION
-        
-
-    .NOTES
-        Version:        1.2
-        Author:         flolilo
-        Creation Date:  2017-10-31
-        Legal stuff: This program is free software. It comes without any warranty, to the extent permitted by
-        applicable law. Most of the script was written by myself (or heavily modified by me when searching for solutions
-        on the WWW). However, some parts are copies or modifications of very genuine code - see
-        the "CREDIT:"-tags to find them.
-
-    .PARAMETER userIn
-        paths to search through
-
-    .PARAMETER ignore_filetypes
-        filetypes to ignore
-
-    .INPUTS
-        none
-    .OUTPUTS
-        none
-    
-    .EXAMPLE
-        find_extensions.ps1 -userIn "D:\Mypath","C:\Mypath" -ignore_filetype "*.avi","*.mp4"
-#>
 param(
-    [array]$userIn =            @(),
-    [array]$ignore_filetypes =  @(
-        "*.avi",
-        "*.mkv",
-        "*.mp4",
-        "*.mpg",
-        "*.pdf",
-        "*.jpg",
-        "*.png",
-        "*.txt",
-        "*.nfo",
-        "*.xml"
-    )
+    [string]$InputPath =    "$((Get-Location).Path)",
+    [int]$wantVerbose =     0,
+    [int]$wantWhatif =      0
 )
 
 # DEFINITION: Get all error-outputs in English:
@@ -59,7 +19,7 @@ param(
 # ==============================================================================
 # ==================================================================================================
 
-# DEFINITION: Making Write-Host much, much faster:
+# DEFINITION: Making Write-ColorOut much, much faster:
 Function Write-ColorOut(){
     <#
         .SYNOPSIS
@@ -122,6 +82,41 @@ Function Write-ColorOut(){
     }
 }
 
+# DEFINITION: For the auditory experience:
+Function Start-Sound(){
+    <#
+        .SYNOPSIS
+            Gives auditive feedback for fails and successes
+        .DESCRIPTION
+            Uses SoundPlayer and Windows's own WAVs to play sounds.
+        .NOTES
+            Date: 2018-03-12
+
+        .PARAMETER Success
+            1 plays Windows's "tada"-sound, 0 plays Windows's "chimes"-sound.
+        
+        .EXAMPLE
+            For success: Start-Sound 1
+        .EXAMPLE
+            For fail: Start-Sound 0
+    #>
+    param(
+        [int]$Success = $(return $false)
+    )
+
+    try{
+        $sound = New-Object System.Media.SoundPlayer -ErrorAction stop
+        if($Success -eq 1){
+            $sound.SoundLocation = "C:\Windows\Media\tada.wav"
+        }else{
+            $sound.SoundLocation = "C:\Windows\Media\chimes.wav"
+        }
+        $sound.Play()
+    }catch{
+        Write-Output "`a"
+    }
+}
+
 
 # ==================================================================================================
 # ==============================================================================
@@ -129,9 +124,23 @@ Function Write-ColorOut(){
 # ==============================================================================
 # ==================================================================================================
 
-for($i=0; $i -lt $userIn.Length; $i++){
-    Write-ColorOut "Looking for files in $($userIn[$i])..." -ForegroundColor Yellow
-    Get-Childitem -LiteralPath "$($userIn[$i])" -Recurse -Exclude $ignore_filetypes -File | Group-Object Extension -NoElement | Sort-Object count -desc
+Function Start-All(){
+    param([string]$InPath = $(throw 'InPath is required by Start-FileSearch'))
+
+    if((Test-Path -LiteralPath $InPath -PathType Container) -eq $false){
+        Write-ColorOut "Cannot find path!" -ForegroundColor Magenta -Indentation 2
+        return $false
+    }else{
+        $AllFiles = @(Get-ChildItem -LiteralPath $InPath -File | ForEach-Object {
+            [PSCustomObject]@{
+                FullName = $_.FullName
+                BaseName = $_.BaseName
+                Extension = $_.Extension
+            }
+        })
+    }
+    $DeleteFiles = @($AllFiles | Sort-Object -Unique -Property BaseName)
+    $DeleteFiles | Format-Table -AutoSize
 }
 
-Pause
+Start-All -InPath $InputPath
