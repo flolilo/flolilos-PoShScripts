@@ -1,5 +1,5 @@
 ﻿# Flo's Foobar-MP3-Copy-Script
-# Foobar-Strategy: %Artist%\[%Album%\][%Track% - ]Name.mp3
+# Foobar-Strategy: %artist%/[%album%/][%tracknumber%_-_]%title%.mp3
 
 <#
     .SYNOPSIS
@@ -36,12 +36,12 @@
         .\foobar_datamover.ps1 -InputPath "D:\My Music" -rename 1 -move 1 -debug 0
 #>
 param(
-    [string]$InputPath = "D:\Temp\mp3_auto",
+    [string]$InputPath = "$((Get-Location).Path)",
     [int]$Renaming = 1,
     [int]$Moving = 1,
     [int]$debug = 0
 )
-$WhatIfPreference = $(if($debug -eq 1){$true}else{$false})
+[switch]$WhatIfPreference = $(if($debug -eq 1){$true}else{$false})
 
 # DEFINITION: Get all error-outputs in English:
     [Threading.Thread]::CurrentThread.CurrentUICulture = 'en-US'
@@ -161,22 +161,27 @@ Function Start-Sound(){
 # ==============================================================================
 # ==================================================================================================
 
-Function Start-Replacing(){
-    param(
-        [Parameter(Mandatory=($true))]
-        [string]$ToReplace
-    )
-
-    $ToReplace = $ToReplace.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")")
-
-    return $ToReplace
-}
-
 Function Start-Renaming(){
     param(
-        [Parameter(Mandatory=($true))]
-        [string]$ToRename
+        [string]$ToRename = $(throw 'ToRename is required by Start-Renaming')
     )
+
+    Function Start-Replacing(){
+        param(
+            [string]$ToReplace = $(throw 'ToReplace is required by Start-Replacing')
+        )
+    
+        $invalidChars = "[{0}]" -f [RegEx]::Escape($([IO.Path]::GetInvalidFileNameChars() -join '' -replace '\\',''))
+        #$separator = '\:\\'
+        #$inter = $ToReplace -Split $separator
+        $ToReplace = $ToReplace -Replace $invalidChars
+        #$ToReplace = $inter -join "$([regex]::Unescape($separator))"
+
+        $ToReplace = $ToReplace.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")").Replace("❤","love")
+
+        return $ToReplace
+    }
+
     [int]$errorcounter = 0
     [array]$artist = @()
     [array]$mp3 = @()
@@ -282,8 +287,7 @@ Function Start-Renaming(){
 
 Function Start-Moving(){
     param(
-        [Parameter(Mandatory=($true))]
-        [string]$ToMove
+        [string]$ToMove = $(throw 'ToMove is required by Start-Moving')
     )
     Write-ColorOut "$(Get-Date -Format "dd.MM.yy - HH:mm") - Moving files..." -ForegroundColor Cyan
     [int]$errorcounter = 0
