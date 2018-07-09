@@ -177,7 +177,7 @@ Function Start-Renaming(){
         $ToReplace = $ToReplace -Replace $invalidChars
         #$ToReplace = $inter -join "$([regex]::Unescape($separator))"
 
-        $ToReplace = $ToReplace.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")").Replace("❤","love")
+        $ToReplace = $ToReplace.Replace('&',"+").Replace("`'","").Replace("ä","ae").Replace("ö","oe").Replace("ü","ue").Replace("ß","ss").Replace(" ", "_").Replace(",","").Replace("í","i").Replace("ř","r").Replace("á","a").Replace("[","(").Replace("]",")").Replace("❤","love").Replace("Ó","O").Replace("ó","o").Replace("ð","o").Replace("Æ","Ae").Replace("ý","y").Replace("Ú","U")
 
         return $ToReplace
     }
